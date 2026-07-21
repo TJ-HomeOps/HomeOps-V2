@@ -142,7 +142,7 @@ Monitor your entire Proxmox cluster from one page.
 - Live Status
 - Power Controls
 
-![Proxmox](docs/proxmox.png)
+![Proxmox](docs/proxmoxv2.png)
 
 ---
 
