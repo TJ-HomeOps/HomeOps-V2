@@ -1,39 +1,82 @@
-import { useEffect, useState } from "react";
-import { api } from "../services/api";
+import React from "react";
+import Card from "./common/Card";
+import ProgressBar from "./ProgressBar";
+import colors from "../theme/colors";
 
-type Health = {
-  status: string;
-  service: string;
-  version: string;
-  timestamp: string;
-};
+export interface HealthMetric {
+  label: string;
+  value: number;
+  color?: string;
+  suffix?: string;
+}
 
-export default function HealthCard() {
-  const [health, setHealth] = useState<Health | null>(null);
+interface HealthCardProps {
+  title: string;
 
-  useEffect(() => {
-    api.get("/health").then((res) => {
-      setHealth(res.data);
-    });
-  }, []);
+  metrics: HealthMetric[];
 
-  if (!health) {
-    return (
-      <div className="rounded-xl bg-slate-800 p-6">
-        Connecting...
-      </div>
-    );
-  }
+  footer?: React.ReactNode;
 
+  actions?: React.ReactNode;
+
+  loading?: boolean;
+}
+
+export default function HealthCard({
+  title,
+  metrics,
+  footer,
+  actions,
+}: HealthCardProps) {
   return (
-    <div className="rounded-xl bg-slate-800 p-6">
-      <h2 className="text-xl font-bold">
-        🟢 Backend Online
-      </h2>
+    <Card
+      title={title}
+      actions={actions}
+      footer={footer}
+    >
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: 18,
+        }}
+      >
+        {metrics.map((metric) => (
+          <div key={metric.label}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                marginBottom: 6,
+              }}
+            >
+              <span
+                style={{
+                  color: colors.textSecondary,
+                  fontWeight: 500,
+                }}
+              >
+                {metric.label}
+              </span>
 
-      <p>Service: {health.service}</p>
-      <p>Status: {health.status}</p>
-      <p>Version: {health.version}</p>
-    </div>
+              <span
+                style={{
+                  color: colors.text,
+                  fontWeight: 600,
+                }}
+              >
+                {metric.value}
+                {metric.suffix ?? "%"}
+              </span>
+            </div>
+
+            <ProgressBar
+              value={metric.value}
+              color={metric.color}
+            />
+          </div>
+        ))}
+      </div>
+    </Card>
   );
 }
