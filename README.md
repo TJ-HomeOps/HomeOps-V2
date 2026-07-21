@@ -2,12 +2,13 @@
 
 # 🏠 HomeOps V2
 
-### Modern Infrastructure Dashboard for Proxmox, Docker & Self-Hosted Services
+### A Modern Operations Platform for Proxmox, Docker & Self-Hosted Infrastructure
 
-A clean, modern dashboard that brings your entire homelab together in one place.
+Manage your entire homelab from one modern, fast and extensible interface.
 
 ![Status](https://img.shields.io/badge/status-Active%20Development-success)
 ![Version](https://img.shields.io/badge/version-v2-blue)
+![License](https://img.shields.io/badge/license-MIT-green)
 ![React](https://img.shields.io/badge/React-61DAFB?logo=react)
 ![Fastify](https://img.shields.io/badge/Fastify-000000?logo=fastify)
 ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript)
@@ -20,46 +21,89 @@ A clean, modern dashboard that brings your entire homelab together in one place.
 
 # 📖 Overview
 
-HomeOps V2 is a modern operations dashboard built to simplify the management of self-hosted infrastructure.
+HomeOps V2 is an open-source operations platform built for self-hosted infrastructure.
 
-Instead of switching between multiple web interfaces, HomeOps provides a unified platform for monitoring and controlling your Proxmox cluster, Docker environment, and eventually all of your self-hosted services.
+Rather than switching between multiple web interfaces, HomeOps provides a single location to monitor, manage and automate your entire homelab.
 
-Built with **React**, **Fastify**, and **TypeScript**, HomeOps focuses on speed, simplicity, and extensibility while providing a modern user experience.
+Whether you're running a single Proxmox server or a full cluster with Docker, media services, authentication, monitoring and automation, HomeOps is designed to become your central operations console.
+
+Built with **React**, **Fastify** and **TypeScript**, HomeOps focuses on performance, simplicity and scalability while remaining easy to extend with additional integrations.
 
 ---
 
-# ✨ Features
+# 🎯 Why HomeOps?
 
-## 📊 Dashboard
+Modern homelabs often contain dozens of services.
 
-- Infrastructure overview
-- Live system statistics
-- Memory usage
-- Disk usage
-- Docker statistics
-- Responsive interface
+- Proxmox
+- Docker
+- Jellyfin
+- Immich
+- Vaultwarden
+- Pi-hole
+- Nextcloud
+- Authentik
+- Homepage
+- AMP
+- Grafana
+- Prometheus
+
+Every service has its own web interface.
+
+HomeOps brings them together into one clean, consistent experience.
+
+Instead of replacing these applications, HomeOps acts as the **operations layer** above them.
+
+---
+
+# ✨ Current Features
+
+## 🖥️ Infrastructure
+
+- Proxmox Cluster Overview
+- Multi-node support
+- Live node statistics
+- Virtual Machine overview
+- LXC overview
+- CPU monitoring
+- Memory monitoring
+- Disk monitoring
+- VM Power Controls
+- LXC Power Controls
+- Automatic refresh
+
+---
 
 ## 🐳 Docker
 
-- View Docker containers
-- Search containers
+- Docker integration
+- Portainer API integration
+- Container overview
+- Container search
 - Start containers
 - Stop containers
 - Restart containers
-- Health status
-- Portainer integration
+- Health monitoring
 
-## 🖥️ Proxmox
+---
 
-- Multi-node support
-- Node overview
-- Virtual Machine overview
-- LXC overview
-- CPU usage
-- Memory usage
-- Disk usage
-- Power controls
-- Live status monitoring
+## 📊 Dashboard
+
+- Infrastructure summary
+- Resource usage
+- Cluster statistics
+- Responsive layout
+- Modern dark interface
+
+---
+
+## 🎨 User Interface
+
+- Modern design
+- Responsive layout
+- Component-based architecture
+- TypeScript throughout
+- Reusable UI components
 
 ---
 
@@ -67,15 +111,15 @@ Built with **React**, **Fastify**, and **TypeScript**, HomeOps focuses on speed,
 
 ## 🏠 Dashboard
 
-Infrastructure overview showing resource usage and server information.
+Infrastructure overview with live resource usage.
 
 ![Dashboard](docs/dashboard.png)
 
 ---
 
-## 🐳 Docker Containers
+## 🐳 Docker
 
-Manage your Docker environment through the Portainer API.
+Manage Docker containers through the Portainer API.
 
 - Start
 - Stop
@@ -83,87 +127,184 @@ Manage your Docker environment through the Portainer API.
 - Search
 - Health Status
 
-![Containers](docs/containers.png)
+![Docker](docs/containers.png)
 
 ---
 
-## 🖥️ Proxmox Cluster
+## 🖥️ Proxmox
 
-Monitor nodes, virtual machines and Linux containers in real time.
+Monitor your entire Proxmox cluster from one page.
+
+- Nodes
+- Virtual Machines
+- Linux Containers
+- Resource Usage
+- Live Status
+- Power Controls
 
 ![Proxmox](docs/proxmox.png)
 
 ---
 
-# 🚧 Roadmap
+# 🚧 Development Status
 
-| Feature | Status |
-|---------|:------:|
-| Dashboard | ✅ |
-| Docker Integration | ✅ |
-| Portainer Integration | ✅ |
-| Proxmox Integration | ✅ |
-| VM Controls | ✅ |
-| LXC Controls | ✅ |
-| Live Status | ✅ |
-| Container Search | ✅ |
-| Authentik SSO | 🚧 |
-| Active Directory Login | 🚧 |
-| Docker Image Management | 🚧 |
-| Docker Compose Management | 🚧 |
-| VM Creation | 📅 |
-| LXC Creation | 📅 |
-| Snapshot Management | 📅 |
-| Notifications | 📅 |
-| Health Monitoring | 📅 |
-| Backup Monitoring | 📅 |
-| Project Management | 📅 |
-| Case Management | 📅 |
-| Service Integrations | 📅 |
+## ✅ Completed
+
+- React Frontend
+- Fastify Backend
+- Docker Integration
+- Portainer Integration
+- Proxmox Integration
+- VM Power Controls
+- LXC Power Controls
+- Live Status Monitoring
+- Responsive Dashboard
+
+---
+
+## 🚧 In Progress
+
+- Component Library
+- Node Details
+- VM Details
+- LXC Details
+- Notification System
+- Authentication
+- Better UI Components
+
+---
+
+## 📅 Planned
+
+- Asset Inventory
+- Case Management
+- Documentation
+- Monitoring
+- Service Integrations
+- Maintenance Mode
+- Automation Engine
+
+---
+
+# 🗺️ Roadmap
+
+## Version 2.1
+
+- ✅ Dashboard
+- ✅ Docker Integration
+- ✅ Portainer Integration
+- ✅ Proxmox Integration
+- ✅ VM Controls
+- ✅ LXC Controls
+- 🚧 Node Detail Pages
+- 🚧 VM Detail Pages
+- 🚧 LXC Detail Pages
+- 🚧 Task Monitoring
+
+---
+
+## Version 2.2
+
+- Docker Compose Management
+- Docker Images
+- Docker Networks
+- Docker Volumes
+- Container Logs
+- Container Terminal
+
+---
+
+## Version 2.3
+
+- Authentik SSO
+- Active Directory Login
+- Role Based Access Control
+- User Management
+- Audit Logging
+
+---
+
+## Version 2.4
+
+- Jellyfin Integration
+- Plex Integration
+- Immich Integration
+- Vaultwarden Integration
+- AdGuard Home
+- Homepage
+- Nextcloud
+
+---
+
+## Version 3.0
+
+- Asset Inventory
+- Rack View
+- Network Topology
+- Case Management
+- Project Management
+- Maintenance Scheduler
+- Notification Center
+- Workflow Automation
 
 ---
 
 # 🏗️ Architecture
 
 ```text
-                    Browser
-                        │
-                        ▼
-        ┌────────────────────────────┐
-        │      React + Vite UI       │
-        └──────────────┬─────────────┘
-                       │
-                    REST API
-                       │
-                       ▼
-        ┌────────────────────────────┐
-        │      Fastify Backend       │
-        └───────────┬────────┬───────┘
-                    │        │
-                    ▼        ▼
-             Proxmox API   Portainer API
+                           Browser
+                               │
+                               ▼
+                     React + TypeScript
+                               │
+                          REST API
+                               │
+                               ▼
+                     Fastify Backend API
+                               │
+       ┌──────────────┬──────────────┬──────────────┐
+       │              │              │
+       ▼              ▼              ▼
+  Proxmox API    Portainer API   Future Services
+                                       │
+      ┌──────────────┬──────────────┬──────────────┐
+      ▼              ▼              ▼
+  Jellyfin       Immich       Authentik
+      ▼              ▼              ▼
+ Nextcloud    Vaultwarden   AdGuard Home
 ```
 
 ---
 
 # 🛠️ Tech Stack
 
-### Frontend
+## Frontend
 
 - React
 - Vite
 - TypeScript
 
-### Backend
+## Backend
 
 - Fastify
-- TypeScript
 - Axios
+- TypeScript
 
-### APIs
+## APIs
 
 - Proxmox VE API
 - Portainer API
+
+## Future Integrations
+
+- Jellyfin
+- Immich
+- Authentik
+- Nextcloud
+- Vaultwarden
+- AdGuard Home
+- Homepage
+- TrueNAS
 
 ---
 
@@ -174,19 +315,24 @@ HomeOps-V2/
 │
 ├── backend/
 │   ├── src/
-│   ├── routes/
-│   ├── services/
+│   │   ├── routes/
+│   │   ├── services/
+│   │   ├── plugins/
+│   │   ├── middleware/
+│   │   └── index.ts
 │   └── .env
 │
 ├── frontend/
 │   ├── src/
-│   ├── public/
-│   └── .env
+│   │   ├── api/
+│   │   ├── components/
+│   │   ├── pages/
+│   │   ├── hooks/
+│   │   ├── layouts/
+│   │   └── styles/
+│   └── public/
 │
 ├── docs/
-│   ├── dashboard.png
-│   ├── containers.png
-│   └── proxmox.png
 │
 ├── README.md
 └── LICENSE
@@ -199,7 +345,7 @@ HomeOps-V2/
 Clone the repository.
 
 ```bash
-git clone git@github.com:TJ-HomeOps/HomeOps-V2.git
+git clone https://github.com/TJ-HomeOps/HomeOps-V2.git
 cd HomeOps-V2
 ```
 
@@ -207,25 +353,23 @@ cd HomeOps-V2
 
 ## Backend
 
-Install dependencies.
-
 ```bash
 cd backend
 npm install
 ```
 
-Create a `.env` file inside the `backend` folder.
+Create a `.env` file.
 
 ```env
-PORTAINER_URL=https://<PORTAINER-IP>:9443/api
+PORTAINER_URL=https://PORTAINER-IP:9443/api
 PORTAINER_TOKEN=
 
-PROXMOX_URL=https://<PROXMOX-IP>:8006
+PROXMOX_URL=https://PROXMOX-IP:8006
 PROXMOX_TOKEN_ID=
 PROXMOX_TOKEN_SECRET=
 ```
 
-Start the backend.
+Run the backend.
 
 ```bash
 npm run dev
@@ -235,28 +379,18 @@ npm run dev
 
 ## Frontend
 
-Install dependencies.
-
 ```bash
 cd ../frontend
 npm install
 ```
 
-Create a `.env` file inside the `frontend` folder.
+Create a `.env` file.
 
 ```env
 VITE_API_URL=http://localhost:3000
 ```
 
-If your backend is running on another server, replace `localhost` with its IP address or hostname.
-
-Example:
-
-```env
-VITE_API_URL=http://192.168.1.100:3000
-```
-
-Start the frontend.
+Run the frontend.
 
 ```bash
 npm run dev
@@ -269,79 +403,113 @@ npm run dev
 ## Backend
 
 | Variable | Description |
-|----------|-------------|
-| `PORTAINER_URL` | Portainer API URL |
-| `PORTAINER_TOKEN` | Portainer API Token |
-| `PROXMOX_URL` | Proxmox API URL |
-| `PROXMOX_TOKEN_ID` | Proxmox API Token ID |
-| `PROXMOX_TOKEN_SECRET` | Proxmox API Token Secret |
+|-----------|-------------|
+| PORTAINER_URL | Portainer API URL |
+| PORTAINER_TOKEN | Portainer API Token |
+| PROXMOX_URL | Proxmox API URL |
+| PROXMOX_TOKEN_ID | Proxmox API Token ID |
+| PROXMOX_TOKEN_SECRET | Proxmox API Token Secret |
+
+---
 
 ## Frontend
 
 | Variable | Description |
-|----------|-------------|
-| `VITE_API_URL` | URL of the HomeOps backend |
+|-----------|-------------|
+| VITE_API_URL | Backend API URL |
 
 ---
 
-# 🔮 Planned Features
+# 🔮 Planned Integrations
 
-### Authentication
+## Infrastructure
 
-- Authentik SSO
-- Active Directory integration
-- Role-based access control
+- Proxmox
+- Docker
+- Kubernetes
+- VMware
 
-### Infrastructure
+---
 
-- Docker image management
-- Docker Compose management
-- VM creation
-- LXC creation
-- Snapshot management
-
-### Monitoring
-
-- Live WebSocket updates
-- Email notifications
-- Discord notifications
-- Resource alerts
-- Backup monitoring
-- Historical metrics
-
-### Self-Hosted Integrations
+## Media
 
 - Jellyfin
 - Plex
 - Immich
-- Nextcloud
-- Vaultwarden
-- AdGuard Home
-- Homepage
+- Navidrome
+- Audiobookshelf
+
+---
+
+## Authentication
+
+- Authentik
+- Active Directory
+- LDAP
+
+---
+
+## Storage
+
 - TrueNAS
-- Grafana
+- Synology DSM
+- Unraid
+
+---
+
+## Monitoring
+
 - Prometheus
+- Grafana
+- Uptime Kuma
+- Beszel
 
-### Productivity
+---
 
-- Project management
-- Case management
-- Documentation
-- Notes
-- Maintenance scheduler
+## Networking
+
+- AdGuard Home
+- Pi-hole
+- pfSense
+- OPNsense
+
+---
+
+# 💡 Long-Term Vision
+
+HomeOps is not intended to replace Proxmox, Docker or other self-hosted applications.
+
+Instead, HomeOps provides a unified operations platform that brings them together into one consistent experience.
+
+The goal is to create a single application where you can:
+
+- Monitor infrastructure
+- Manage virtual machines
+- Control containers
+- View logs
+- Track backups
+- Receive alerts
+- Manage users
+- Document your environment
+- Track maintenance
+- Manage projects
+- Automate common tasks
+
+Without constantly switching between different web interfaces.
 
 ---
 
 # 🤝 Contributing
 
-Contributions are welcome!
+Contributions are always welcome.
 
-If you'd like to improve HomeOps, you can:
+You can help by:
 
-- ⭐ Star the repository
-- 🐞 Report bugs
-- 💡 Suggest features
-- 🔧 Submit pull requests
+- ⭐ Starring the repository
+- 🐛 Reporting bugs
+- 💡 Suggesting new features
+- 🔧 Opening pull requests
+- 📖 Improving documentation
 
 ---
 
@@ -349,26 +517,30 @@ If you'd like to improve HomeOps, you can:
 
 This project is licensed under the MIT License.
 
-See the `LICENSE` file for more information.
+See the `LICENSE` file for details.
 
 ---
 
 # ❤️ About
 
-HomeOps V2 began as a personal project to simplify the management of an expanding Proxmox homelab.
+HomeOps V2 started as a personal project to simplify the management of an expanding Proxmox homelab.
 
-As additional services such as Docker, media servers, authentication, monitoring, backups, and automation were added, managing everything through separate web interfaces became increasingly time-consuming.
+As more services were added, including Docker, media servers, authentication, backups and monitoring, constantly switching between different management interfaces became increasingly inefficient.
 
-The long-term vision is to create a single, modern operations platform that unifies self-hosted infrastructure into one fast, intuitive, and extensible dashboard.
+HomeOps was created to solve that problem.
 
-Whether you're managing a single Proxmox node or an entire homelab, HomeOps aims to provide the tools you need to keep everything running smoothly.
+The long-term vision is to build a fast, modern and extensible operations platform that provides a single pane of glass for self-hosted infrastructure.
+
+Whether you're running a small home server or a full enterprise-style homelab, HomeOps aims to make infrastructure management simple, intuitive and enjoyable.
 
 ---
 
 <div align="center">
 
-### ⭐ If you find HomeOps useful, consider giving the project a Star!
+## ⭐ Star the project if you find it useful!
 
-Made with ❤️ for the self-hosting and homelab community.
+Built with ❤️ for the Homelab & Self-Hosting Community.
+
+**HomeOps V2** • One Dashboard. Complete Control.
 
 </div>
