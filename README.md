@@ -17,7 +17,7 @@ A modern web-based operations center for managing your **Proxmox VE infrastructu
 
 ---
 
-<img src="docs/dashboard.png" width="95%" alt="HomeOps Dashboard"/>
+<img src="docs/dashboardv2.png" width="95%" alt="HomeOps Dashboard"/>
 
 *The all-in-one dashboard for self-hosters and homelab enthusiasts.*
 
@@ -105,7 +105,8 @@ The frontend communicates only with the HomeOps backend, which transforms infras
 ## 🏠 Dashboard
 
 <p align="center">
-<img src="docs/dashboard.png" width="95%" alt="Dashboard">
+<img src="docs/dashboardv2.png" width="95%" alt="Dashboard">
+<img src="docs/dashboardv21.png" width="95%" alt="Dashboard">
 </p>
 
 The Dashboard provides a complete overview of your infrastructure, including cluster health, running guests, Docker statistics, storage usage, and real-time system metrics.
