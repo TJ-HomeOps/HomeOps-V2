@@ -2,6 +2,8 @@ const API_BASE_URL =
   import.meta.env.VITE_API_URL ??
   "http://192.168.0.20:3000";
 
+export const apiBaseUrl = API_BASE_URL;
+
 async function request<T>(
   endpoint: string,
   options?: RequestInit

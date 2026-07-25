@@ -15,6 +15,9 @@
 !.env.example
 !**/.env.example
 
+# Runtime output (camera HLS playlist and segments)
+backend/data/
+
 # Logs
 *.log
 logs/

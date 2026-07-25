@@ -7,6 +7,7 @@ import dockerRoutes from "./routes/docker";
 import systemRoutes from "./routes/system";
 import containerRoutes from "./routes/containers";
 import proxmoxRoutes from "./routes/proxmox";
+import cameraRoutes from "./routes/camera";
 
 const app = Fastify({
   logger: true,
@@ -28,6 +29,7 @@ async function start() {
     await app.register(systemRoutes);
     await app.register(containerRoutes);
     await app.register(proxmoxRoutes);
+    await app.register(cameraRoutes);
 
     await app.listen({
       host: "0.0.0.0",
