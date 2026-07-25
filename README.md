@@ -100,6 +100,14 @@ The frontend communicates only with the HomeOps backend, which transforms infras
 
 ---
 
+## 📷 Security Camera
+
+- Live view of a local RTSP camera, streamed to the browser as HLS
+- The browser never talks to the camera directly, and the backend never sees its credentials either — both are held only by a local go2rtc relay
+- Reload and expand-to-fullscreen controls on the Notifications page
+
+---
+
 # 📸 Screenshots
 
 ## 🏠 Dashboard
@@ -291,12 +299,12 @@ npm run dev
 
 ## 🚧 Phase 2
 
-- HomeOps API Refactor
-- Node Details
-- VM Details
-- LXC Details
-- Power Controls
-- Docker Management
+- ⬜ HomeOps API Refactor
+- ⬜ Node Details
+- ⬜ VM Details
+- ⬜ LXC Details
+- ✅ Power Controls
+- ✅ Docker Management
 
 ---
 
