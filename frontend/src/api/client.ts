@@ -1,6 +1,7 @@
-const API_BASE_URL =
-  import.meta.env.VITE_API_URL ??
-  "http://192.168.0.20:3000";
+// Empty means same-origin: the dev server proxies /api to the backend, which
+// keeps requests on whatever host the app was loaded from. Set VITE_API_URL
+// only to point at a backend on a different origin.
+const API_BASE_URL = import.meta.env.VITE_API_URL ?? "";
 
 export const apiBaseUrl = API_BASE_URL;
 
