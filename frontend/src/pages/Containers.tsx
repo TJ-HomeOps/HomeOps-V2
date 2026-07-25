@@ -3,29 +3,27 @@ import { useEffect, useMemo, useState } from "react";
 import ContainerCard from "../components/ContainerCard";
 import PageHeader from "../components/PageHeader";
 import SearchBar from "../components/SearchBar";
-
-interface Container {
-  id: string;
-  name: string;
-  image: string;
-  state: string;
-  status: string;
-}
-
-const API = "http://192.168.0.20:3000";
+import {
+  getContainers,
+  restartContainer,
+  startContainer,
+  stopContainer,
+} from "../api/docker";
+import type { Container } from "../api/docker";
 
 export default function Containers() {
   const [containers, setContainers] = useState<Container[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [search, setSearch] = useState("");
 
   async function loadContainers() {
     try {
-      const response = await fetch(`${API}/api/containers`);
-      const data = await response.json();
-      setContainers(data);
+      setContainers(await getContainers());
+      setError(false);
     } catch (err) {
       console.error(err);
+      setError(true);
     } finally {
       setLoading(false);
     }
@@ -39,11 +37,18 @@ export default function Containers() {
     return () => clearInterval(interval);
   }, []);
 
-  async function action(id: string, command: string) {
+  async function action(
+    id: string,
+    command: "start" | "stop" | "restart"
+  ) {
+    const run = {
+      start: startContainer,
+      stop: stopContainer,
+      restart: restartContainer,
+    }[command];
+
     try {
-      await fetch(`${API}/api/containers/${id}/${command}`, {
-        method: "POST",
-      });
+      await run(id);
 
       loadContainers();
     } catch (err) {
@@ -100,14 +105,20 @@ export default function Containers() {
             border: "1px solid #1f2937",
           }}
         >
-          <h2>No containers found</h2>
+          <h2>
+            {error
+              ? "Unable to load containers"
+              : "No containers found"}
+          </h2>
 
           <p
             style={{
               color: "#94a3b8",
             }}
           >
-            Try another search.
+            {error
+              ? "The Docker API could not be reached."
+              : "Try another search."}
           </p>
         </div>
       ) : (
