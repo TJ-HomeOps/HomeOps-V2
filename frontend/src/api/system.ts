@@ -1,32 +1,17 @@
 import { api } from "./client";
-import type { SystemInfo } from "../types/system";
+import type {
+  CPUInfo,
+  DiskInfo,
+  MemoryInfo,
+  SystemInfo,
+} from "../types/system";
 
-export interface CPUInfo {
-  cores: number;
-  load: number;
-}
-
-export interface MemoryInfo {
-  total: number;
-  used: number;
-  free: number;
-  percent: number;
-}
-
-export interface DiskInfo {
-  total: number;
-  used: number;
-  free: number;
-  percent: number;
-}
-
-export interface SystemInfo {
-  hostname: string;
-  uptime: number;
-  cpu: CPUInfo;
-  memory: MemoryInfo;
-  disk: DiskInfo;
-}
+export type {
+  CPUInfo,
+  DiskInfo,
+  MemoryInfo,
+  SystemInfo,
+};
 
 export function getSystemInfo(): Promise<SystemInfo> {
   return api.get("/api/system");

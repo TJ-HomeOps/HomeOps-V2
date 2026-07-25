@@ -1,4 +1,4 @@
-import { FastifyInstance } from "fastify";
+import type { FastifyInstance } from "fastify";
 import os from "os";
 import fs from "fs";
 
@@ -7,7 +7,7 @@ export default async function systemRoutes(app: FastifyInstance) {
     try {
       const cpus = os.cpus();
 
-      const cpuLoad = os.loadavg()[0];
+      const cpuLoad = os.loadavg()[0] ?? 0;
 
       const totalMemory = os.totalmem();
       const freeMemory = os.freemem();

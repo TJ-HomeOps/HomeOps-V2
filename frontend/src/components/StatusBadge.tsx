@@ -1,13 +1,19 @@
 interface StatusBadgeProps {
   status: string;
+  // Docker reports a machine-readable state ("running") alongside a
+  // human-readable status ("Up 3 hours"). Proxmox only sends the former.
+  state?: string;
 }
 
 export default function StatusBadge({
   status,
+  state,
 }: StatusBadgeProps) {
+  const health = state ?? status;
+
   const running =
-    status === "running" ||
-    status === "online";
+    health === "running" ||
+    health === "online";
 
   return (
     <span

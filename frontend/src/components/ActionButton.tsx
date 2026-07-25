@@ -1,5 +1,3 @@
-import React from "react";
-
 interface ActionButtonProps {
   label: string;
   icon?: string;

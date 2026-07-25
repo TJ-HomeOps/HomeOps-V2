@@ -1,4 +1,4 @@
-import { FastifyInstance } from "fastify";
+import type { FastifyInstance } from "fastify";
 import { portainer } from "../services/portainer";
 
 export default async function endpointRoutes(app: FastifyInstance) {

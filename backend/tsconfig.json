@@ -1,5 +1,8 @@
 {
   // Visit https://aka.ms/tsconfig to read more about this file
+  // Only compile source. data/ holds runtime output such as the camera HLS
+  // segments, whose .ts extension would otherwise be read as TypeScript.
+  "include": ["src"],
   "compilerOptions": {
     // File Layout
     // "rootDir": "./src",
@@ -7,9 +10,11 @@
 
     // Environment Settings
     // See also https://aka.ms/tsconfig/module
-    "module": "nodenext",
+    // "preserve" matches how tsx runs this code: ESM syntax with
+    // bundler-style, extensionless relative imports.
+    "module": "preserve",
     "target": "esnext",
-    "types": [],
+    "types": ["node"],
     // For nodejs:
     // "lib": ["esnext"],
     // "types": ["node"],

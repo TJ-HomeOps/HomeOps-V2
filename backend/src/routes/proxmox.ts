@@ -1,4 +1,4 @@
-import { FastifyInstance } from "fastify";
+import type { FastifyInstance } from "fastify";
 import { proxmox } from "../services/proxmox";
 
 export default async function proxmoxRoutes(app: FastifyInstance) {

@@ -4,25 +4,10 @@ import type {
   DockerInfo,
 } from "../types/docker";
 
-export interface Container {
-  id: string;
-  name: string;
-  image: string;
-  state: string;
-  status: string;
-}
-
-export interface DockerInfo {
-  serverVersion: string;
-  operatingSystem: string;
-  containers: number;
-  running: number;
-  stopped: number;
-  paused: number;
-  images: number;
-  cpu: number;
-  memory: number;
-}
+export type {
+  Container,
+  DockerInfo,
+};
 
 export function getDockerInfo(): Promise<DockerInfo> {
   return api.get("/api/docker");
