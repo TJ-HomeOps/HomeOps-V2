@@ -1,4 +1,4 @@
-import { api } from "./client";
+import { api, apiBaseUrl } from "./client";
 import type {
   Container,
   DockerInfo,
@@ -36,8 +36,10 @@ export function restartContainer(id: string) {
 export async function getContainerLogs(
   id: string
 ): Promise<string> {
+  // Logs are plain text rather than JSON, so this bypasses the api helper but
+  // must still resolve against the same base URL.
   const response = await fetch(
-    `${import.meta.env.VITE_API_URL}/api/containers/${id}/logs`
+    `${apiBaseUrl}/api/containers/${id}/logs`
   );
 
   if (!response.ok) {
