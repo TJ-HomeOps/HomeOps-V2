@@ -146,6 +146,14 @@ The frontend communicates only with the HomeOps backend, which transforms infras
 
 ---
 
+## 📄 REST API Documentation
+
+- Full OpenAPI 3.0 spec generated from the backend's routes, served as plain JSON at `/api/docs/openapi.json`
+- No bundled Swagger UI — `@fastify/swagger-ui` currently pulls in an unpatched high-severity path-traversal advisory via `@fastify/static`, so point an external tool (Swagger Editor, Postman, Insomnia) at the JSON instead
+- Subject to the same password protection as the rest of the API when the lock is enabled
+
+---
+
 # 📸 Screenshots
 
 ## 🏠 Dashboard
@@ -271,6 +279,7 @@ This keeps the frontend simple while allowing backend integrations to evolve ind
 - ✅ LXC Details
 - ✅ Container Details
 - ✅ Optional Password Protection
+- ✅ REST API Documentation (OpenAPI JSON)
 
 ---
 
@@ -382,13 +391,13 @@ HomeOps ships with an optional single shared-password lock for the whole app. It
 
 ---
 
-## 🌍 Phase 4
+## 🚧 Phase 4
 
-- Authentik Authentication
-- Role Based Access Control
-- Multi-Cluster Support
-- Plugin System
-- REST API Documentation
+- ⬜ Authentik Authentication — superseded for now by the simple [password protection](#password-protection) in Phase 3
+- ⬜ Role Based Access Control — depends on real user identity (Authentik), so on hold until that lands
+- ⬜ Multi-Cluster Support
+- ⬜ Plugin System
+- ✅ REST API Documentation
 
 ---
 

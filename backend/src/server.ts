@@ -1,6 +1,7 @@
 import Fastify from "fastify";
 import cors from "@fastify/cors";
 import websocketPlugin from "@fastify/websocket";
+import swaggerPlugin from "@fastify/swagger";
 
 import healthRoutes from "./routes/health";
 import endpointRoutes from "./routes/endpoints";
@@ -14,6 +15,7 @@ import metricsRoutes from "./routes/metrics";
 import auditRoutes from "./routes/audit";
 import wsRoutes from "./routes/ws";
 import authRoutes from "./routes/auth";
+import docsRoutes from "./routes/docs";
 import { startWatchers } from "./services/watchers";
 import { startSystemAlertWatcher } from "./services/alerts";
 import { SESSION_COOKIE_NAME, isSessionValid } from "./services/auth";
@@ -60,6 +62,17 @@ async function start() {
       credentials: true,
     });
     await app.register(websocketPlugin);
+    await app.register(swaggerPlugin, {
+      openapi: {
+        openapi: "3.0.0",
+        info: {
+          title: "HomeOps API",
+          description:
+            "Backend API for HomeOps — Proxmox, Docker, notifications, metrics, and audit data.",
+          version: "1.0.0",
+        },
+      },
+    });
 
     app.addHook("onRequest", async (request, reply) => {
       const path = request.url.split("?")[0] ?? request.url;
@@ -89,6 +102,7 @@ async function start() {
     await app.register(metricsRoutes);
     await app.register(auditRoutes);
     await app.register(wsRoutes);
+    await app.register(docsRoutes);
 
     startWatchers(app);
     startSystemAlertWatcher(app);
