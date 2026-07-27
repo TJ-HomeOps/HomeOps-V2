@@ -39,36 +39,28 @@ The frontend communicates only with the HomeOps backend, which transforms infras
 
 # ✨ Features
 
-## 🖥️ Infrastructure Dashboard
+## 🏠 Dashboard — At a Glance
 
-- Real-time Cluster Overview
-- Node Health Monitoring
-- Running Virtual Machines
-- Running LXC Containers
-- Docker Monitoring
-- System Metrics
-- Storage Summary
-- Automatic Refresh
-- Guest Search
-- Responsive Design
+The landing page is a minimal status board, designed to stay open on a second screen or tablet rather than be dug through: one tile per Proxmox node showing
+
+- Online / offline status
+- CPU temperature
+- RAM usage %
+- Storage usage %
+
+Tap a tile to jump straight into that node's full detail page. Everything else — cluster health, resource history, running guests, Docker and system overview — lives on the Proxmox page instead, one level deeper.
 
 ---
 
-## ⚡ Dashboard Highlights
+## 🧭 Collapsible Sidebar
 
-- 📊 Cluster Health
-- 📦 Running Guests
-- 🐳 Docker Overview
-- 💾 Storage Usage
-- 💻 System Information
-- 🔄 Automatic Refresh (10 seconds)
-- 🔍 Search Running Guests
-- 🎨 Modern Responsive UI
-- 🔒 Strict TypeScript
+The sidebar can be collapsed to give small screens (like a tablet) more room, with the choice remembered across reloads.
 
 ---
 
 ## 🖥️ Proxmox Integration
+
+This is the in-depth operations hub — everything the Dashboard deliberately leaves out lives here: cluster health, per-node cards with resource history charts, an activity panel, searchable VM/LXC cards with start/stop/restart, and Docker + system overview panels.
 
 - Cluster Overview
 - Node Statistics
@@ -239,14 +231,20 @@ This keeps the frontend simple while allowing backend integrations to evolve ind
 
 # 🚀 Current Features
 
-## Dashboard
+## Dashboard (At a Glance)
+
+- ✅ Per-Node Status Tiles (online/offline, CPU temp, RAM %, storage %)
+- ✅ Tap-Through to Node Details
+- ✅ Collapsible Sidebar
+
+## Proxmox Page (In-Depth)
 
 - ✅ Cluster Overview
 - ✅ Node Cards
 - ✅ Cluster Health
 - ✅ Activity Panel
-- ✅ Running VM Table
-- ✅ Running LXC Table
+- ✅ Resource History Charts
+- ✅ Searchable VM/LXC Cards with Power Controls
 - ✅ Docker Overview
 - ✅ System Overview
 - ✅ Storage Summary
