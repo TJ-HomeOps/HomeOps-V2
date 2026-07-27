@@ -17,7 +17,7 @@ A modern web-based operations center for managing your **Proxmox VE infrastructu
 
 ---
 
-<img src="docs/dashboardv2.png" width="95%" alt="HomeOps Dashboard"/>
+<img src="docs/Dashboardv2.png" width="95%" alt="HomeOps Dashboard"/>
 
 *The all-in-one dashboard for self-hosters and homelab enthusiasts.*
 
