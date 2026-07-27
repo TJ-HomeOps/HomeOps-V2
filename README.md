@@ -104,7 +104,45 @@ The frontend communicates only with the HomeOps backend, which transforms infras
 
 - Live view of a local RTSP camera, streamed to the browser as HLS
 - The browser never talks to the camera directly, and the backend never sees its credentials either — both are held only by a local go2rtc relay
-- Reload and expand-to-fullscreen controls on the Notifications page
+- Reload and expand-to-fullscreen controls on its own Security Camera page
+
+---
+
+## 🔔 Notifications & Alerting
+
+- Live feed of node, VM, LXC, container, and camera relay state changes
+- Threshold-based alerts for CPU, memory, and disk usage on Proxmox nodes and the backend host itself, with an automatic "back to normal" notification when a metric drops back down
+- Read / unread tracking with mark-all-as-read
+- Delivered instantly over WebSocket, with REST polling kept as a fallback
+
+---
+
+## 📈 Historical Metrics
+
+- Rolling 24-hour CPU / memory / disk history for every Proxmox node, every running VM and LXC, and the backend host
+- Shown as lightweight in-app charts on the Dashboard and on each node/guest's own detail page
+
+---
+
+## 🔍 Node, VM, LXC & Container Details
+
+- Dedicated detail page for every Proxmox node, VM, LXC, and Docker container
+- Extended status beyond the dashboard summary: PVE and kernel version, load average, storage volumes, full guest config, container logs
+- Power actions and resource history available directly from the detail view
+
+---
+
+## 📝 Audit Log
+
+- Every start / stop / restart action taken from HomeOps is recorded with its outcome
+- A separate trail from Notifications — this is what HomeOps *did*, not what it *observed*
+
+---
+
+## 🔐 Password Protection
+
+- Optional single shared-password lock for the whole app, toggled from Settings
+- Off by default. Enabling it doesn't require Authentik or any external identity provider — that's still a planned Phase 4 item
 
 ---
 
@@ -155,6 +193,7 @@ Monitor your Docker environment with container statistics, image counts, server 
 
 - Node.js
 - Fastify
+- WebSocket (`@fastify/websocket`)
 - TypeScript
 
 ## Infrastructure
@@ -212,6 +251,26 @@ This keeps the frontend simple while allowing backend integrations to evolve ind
 - ✅ Node Health
 - ✅ Running Guests
 - ✅ Docker Statistics
+- ✅ Historical Metrics (24h)
+
+---
+
+## Notifications, Alerting & Audit
+
+- ✅ Live Notification Feed
+- ✅ Threshold-Based Alerts
+- ✅ Audit Log
+- ✅ WebSocket Live Updates
+
+---
+
+## Details & Access
+
+- ✅ Node Details
+- ✅ VM Details
+- ✅ LXC Details
+- ✅ Container Details
+- ✅ Optional Password Protection
 
 ---
 
@@ -281,6 +340,10 @@ npm install
 npm run dev
 ```
 
+## Password protection (optional)
+
+HomeOps ships with an optional single shared-password lock for the whole app. It's **off by default** — turn it on from the Settings page once the app is running, no extra configuration needed.
+
 ---
 
 # 🛣️ Roadmap
@@ -297,25 +360,25 @@ npm run dev
 
 ---
 
-## 🚧 Phase 2
+## ✅ Phase 2
 
-- ⬜ HomeOps API Refactor
-- ⬜ Node Details
-- ⬜ VM Details
-- ⬜ LXC Details
+- ✅ HomeOps API Refactor
+- ✅ Node Details
+- ✅ VM Details
+- ✅ LXC Details
 - ✅ Power Controls
 - ✅ Docker Management
 
 ---
 
-## 🔜 Phase 3
+## 🚧 Phase 3
 
-- WebSocket Live Updates
-- Historical Metrics
-- Notifications
-- Alerting
-- Audit Logs
-- User Preferences
+- ✅ WebSocket Live Updates
+- ✅ Historical Metrics
+- ✅ Notifications
+- ✅ Alerting
+- ✅ Audit Logs
+- ⬜ User Preferences
 
 ---
 
