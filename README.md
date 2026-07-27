@@ -77,6 +77,7 @@ The frontend communicates only with the HomeOps backend, which transforms infras
 - Resource Usage
 - Health Monitoring
 - Multi-Cluster Support — connect more than one Proxmox cluster and see them as one unified dashboard, each resource tagged with which cluster it belongs to
+- CPU Temperature Monitoring — reads `lm-sensors` over a locked-down SSH connection to each node, shown on the Node Details page with history and threshold alerting (see [Node temperature setup](#node-temperature-monitoring-optional))
 
 ---
 
@@ -261,6 +262,7 @@ This keeps the frontend simple while allowing backend integrations to evolve ind
 - ✅ Running Guests
 - ✅ Docker Statistics
 - ✅ Historical Metrics (24h)
+- ✅ Node CPU Temperature (via SSH + lm-sensors)
 
 ---
 
@@ -359,6 +361,17 @@ HomeOps ships with an optional single shared-password lock for the whole app. It
 
 The `PROXMOX_URL` / `PROXMOX_TOKEN_ID` / `PROXMOX_TOKEN_SECRET` variables in `backend/.env` configure the primary cluster. To add more, set `PROXMOX_CLUSTERS` to a JSON array — see `backend/.env.example` for the exact shape. Every cluster shows up unified in the same Dashboard/Proxmox views, with each node, VM, and LXC tagged with which cluster it belongs to.
 
+## Node temperature monitoring (optional)
+
+Proxmox's own API doesn't expose hardware temperatures, so HomeOps reads them by SSHing into each node and running `lm-sensors`. Node IPs are discovered automatically from the Proxmox API — nothing to configure there. What you do need is a **locked-down SSH key** authorized on each node, restricted so it can never run anything except `sensors -j`:
+
+```bash
+# On each Proxmox node, as the user HomeOps should connect as (root by default):
+echo 'command="sensors -j",no-port-forwarding,no-X11-forwarding,no-agent-forwarding,no-pty <your-homeops-backend-public-key>' >> ~/.ssh/authorized_keys
+```
+
+The `command=` restriction means that key can *only* ever run `sensors -j`, regardless of what's actually sent over the connection — it can't be used to log in interactively, run other commands, or forward ports, even if the key were ever compromised. `lm-sensors` needs to already be installed and configured (`sensors-detect`) on each node. Without this set up, HomeOps works exactly as before — temperature sections just don't appear.
+
 ---
 
 # 🛣️ Roadmap
@@ -402,7 +415,7 @@ The `PROXMOX_URL` / `PROXMOX_TOKEN_ID` / `PROXMOX_TOKEN_SECRET` variables in `ba
 - ⬜ Authentik Authentication — superseded for now by the simple [password protection](#password-protection) in Phase 3
 - ⬜ Role Based Access Control — depends on real user identity (Authentik), so on hold until that lands
 - ✅ Multi-Cluster Support
-- ⬜ Plugin System — no concrete plugin in mind yet, so no architecture built for it
+- ⬜ Plugin System — the concrete idea behind this turned out to be node CPU temperature monitoring, which shipped directly as a feature instead (see Proxmox Integration above) rather than as a speculative plugin architecture with no other plugins to justify it
 - ✅ REST API Documentation
 
 ---
