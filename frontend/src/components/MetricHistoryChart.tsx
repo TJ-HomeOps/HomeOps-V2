@@ -12,16 +12,22 @@ interface MetricHistoryChartProps {
   title: string;
   series: MetricChartSeries[];
   height?: number;
+  // Most callers are 0-100 percentages; temperature and other non-percent
+  // metrics pass their own scale and unit suffix.
+  maxValue?: number;
+  unit?: string;
 }
 
 const width = 600;
-const gridMarks = [0, 25, 50, 75, 100];
 
 export default function MetricHistoryChart({
   title,
   series,
   height = 140,
+  maxValue = 100,
+  unit = "%",
 }: MetricHistoryChartProps) {
+  const gridMarks = [0, 0.25, 0.5, 0.75, 1].map((fraction) => fraction * maxValue);
   const { minTime, maxTime } = useMemo(() => {
     let min = Infinity;
     let max = -Infinity;
@@ -47,8 +53,8 @@ export default function MetricHistoryChart({
   };
 
   const yFor = (v: number) => {
-    const clamped = Math.max(0, Math.min(100, v));
-    return height - (clamped / 100) * height;
+    const clamped = Math.max(0, Math.min(maxValue, v));
+    return height - (clamped / maxValue) * height;
   };
 
   const hasData = series.some((item) => item.points.length > 1);
@@ -97,7 +103,8 @@ export default function MetricHistoryChart({
                 {item.label}
                 {last && (
                   <span style={{ color: colors.textMuted }}>
-                    {last.v.toFixed(0)}%
+                    {last.v.toFixed(0)}
+                    {unit}
                   </span>
                 )}
               </div>
@@ -175,7 +182,7 @@ export default function MetricHistoryChart({
                 fill="transparent"
                 stroke="none"
               >
-                <title>{`${item.label}: ${point.v.toFixed(1)}% at ${new Date(
+                <title>{`${item.label}: ${point.v.toFixed(1)}${unit} at ${new Date(
                   point.t
                 ).toLocaleTimeString()}`}</title>
               </circle>

@@ -6,8 +6,8 @@ import { recordMetric } from "./metrics";
 
 type AlertLevel = "ok" | "warning" | "critical";
 
-const warningPercent = 80;
-const criticalPercent = 95;
+const defaultWarningPercent = 80;
+const defaultCriticalPercent = 95;
 
 const systemPollIntervalMs = 30000;
 
@@ -18,12 +18,20 @@ const systemPollIntervalMs = 30000;
 // would spam a new entry.
 const alertLevels = new Map<string, AlertLevel>();
 
-function levelForPercent(percent: number): AlertLevel {
-  if (percent >= criticalPercent) {
+export interface ThresholdOptions {
+  // Most callers are 0-100 percentages; anything else (e.g. temperature)
+  // passes its own thresholds and unit suffix.
+  warning?: number;
+  critical?: number;
+  unit?: string;
+}
+
+function levelFor(value: number, warning: number, critical: number): AlertLevel {
+  if (value >= critical) {
     return "critical";
   }
 
-  if (percent >= warningPercent) {
+  if (value >= warning) {
     return "warning";
   }
 
@@ -34,9 +42,14 @@ export async function evaluateThreshold(
   key: string,
   source: NotificationSource,
   label: string,
-  percent: number
+  value: number,
+  options: ThresholdOptions = {}
 ): Promise<void> {
-  const level = levelForPercent(percent);
+  const warning = options.warning ?? defaultWarningPercent;
+  const critical = options.critical ?? defaultCriticalPercent;
+  const unit = options.unit ?? "%";
+
+  const level = levelFor(value, warning, critical);
   const previous = alertLevels.get(key) ?? "ok";
 
   if (level === previous) {
@@ -45,12 +58,14 @@ export async function evaluateThreshold(
 
   alertLevels.set(key, level);
 
+  const formatted = `${value.toFixed(1)}${unit}`;
+
   if (level === "ok") {
     await recordNotification({
       source,
       severity: "info",
       title: `${label} back to normal`,
-      message: `${label} has dropped back to ${percent.toFixed(1)}%.`,
+      message: `${label} has dropped back to ${formatted}.`,
     });
 
     return;
@@ -60,9 +75,9 @@ export async function evaluateThreshold(
     source,
     severity: level,
     title: `${label} is ${level === "critical" ? "critically high" : "high"}`,
-    message: `${label} is at ${percent.toFixed(1)}%, above the ${
-      level === "critical" ? criticalPercent : warningPercent
-    }% threshold.`,
+    message: `${label} is at ${formatted}, above the ${
+      level === "critical" ? critical : warning
+    }${unit} threshold.`,
   });
 }
 

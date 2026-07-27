@@ -67,6 +67,27 @@ export function getNodeDetail(
   return api.get<ProxmoxNodeDetail>(`/api/proxmox/nodes/${cluster}/${node}`);
 }
 
+export interface SensorReading {
+  chip: string;
+  label: string;
+  celsius: number;
+}
+
+export interface NodeSensorSnapshot {
+  readings: SensorReading[];
+  cpuTemperature: number | undefined;
+  updatedAt: string;
+}
+
+export function getNodeSensors(
+  cluster: string,
+  node: string
+): Promise<NodeSensorSnapshot> {
+  return api.get<NodeSensorSnapshot>(
+    `/api/proxmox/nodes/${cluster}/${node}/sensors`
+  );
+}
+
 export function getVmDetail(
   cluster: string,
   node: string,

@@ -1,6 +1,7 @@
 import type { FastifyInstance, FastifyReply } from "fastify";
 import { getProxmoxCluster, getProxmoxClusters } from "../services/proxmox";
 import { describeErrorDetail, recordAuditEntry } from "../services/audit";
+import { getCachedSensors } from "../services/sensors";
 import type { ProxmoxResource } from "../types/proxmox";
 
 function requireCluster(clusterId: string, reply: FastifyReply) {
@@ -147,6 +148,28 @@ export default async function proxmoxRoutes(app: FastifyInstance) {
           message: err.response?.data || err.message,
         });
       }
+    }
+  );
+
+  // Served from the last sensor poll's cache (see services/sensors.ts) —
+  // querying live would mean an SSH round-trip on every page load.
+  app.get<{ Params: { cluster: string; node: string } }>(
+    "/api/proxmox/nodes/:cluster/:node/sensors",
+    async (request, reply) => {
+      const { cluster: clusterId, node } = request.params;
+      const cluster = requireCluster(clusterId, reply);
+      if (!cluster) return;
+
+      const snapshot = getCachedSensors(clusterId, node);
+
+      if (!snapshot) {
+        return reply.code(404).send({
+          success: false,
+          message: "No sensor data yet for this node.",
+        });
+      }
+
+      return snapshot;
     }
   );
 

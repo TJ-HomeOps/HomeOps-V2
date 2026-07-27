@@ -1,7 +1,15 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, RefreshCw } from "lucide-react";
-import { getNodeDetail, getOverview, type ProxmoxNodeDetail, type ProxmoxOverview } from "../api/proxmox";
+import {
+  getNodeDetail,
+  getNodeSensors,
+  getOverview,
+  type NodeSensorSnapshot,
+  type ProxmoxNodeDetail,
+  type ProxmoxOverview,
+} from "../api/proxmox";
+import { Thermometer } from "lucide-react";
 import { getMetrics, type MetricsResponse } from "../api/metrics";
 import PageHeader from "../components/PageHeader";
 import Alert from "../components/common/Alert";
@@ -64,6 +72,7 @@ export default function NodeDetail() {
 
   const [detail, setDetail] = useState<ProxmoxNodeDetail | null>(null);
   const [overview, setOverview] = useState<ProxmoxOverview | null>(null);
+  const [sensors, setSensors] = useState<NodeSensorSnapshot | null>(null);
   const [metrics, setMetrics] = useState<MetricsResponse>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -95,6 +104,23 @@ export default function NodeDetail() {
   }, [load]);
 
   useEffect(() => {
+    if (!cluster || !node) return;
+
+    const loadSensors = () => {
+      // Sensors poll on its own 60s cycle server-side and 404 until the
+      // first poll lands — not an error state worth surfacing on the page.
+      void getNodeSensors(cluster, node)
+        .then(setSensors)
+        .catch(() => undefined);
+    };
+
+    loadSensors();
+
+    const timer = setInterval(loadSensors, 30000);
+    return () => clearInterval(timer);
+  }, [cluster, node]);
+
+  useEffect(() => {
     void getMetrics()
       .then(setMetrics)
       .catch(() => undefined);
@@ -122,6 +148,22 @@ export default function NodeDetail() {
         };
       })
       .filter((series): series is NonNullable<typeof series> => Boolean(series));
+  }, [metrics, cluster, node]);
+
+  const temperatureSeries = useMemo(() => {
+    if (!cluster || !node) return [];
+
+    const series = metrics[`proxmox:${cluster}:node:${node}:temp`];
+    if (!series) return [];
+
+    return [
+      {
+        key: "temp",
+        label: "CPU",
+        color: historyColors.cpu,
+        points: series.points,
+      },
+    ];
   }, [metrics, cluster, node]);
 
   const guests = useMemo(() => {
@@ -275,6 +317,25 @@ export default function NodeDetail() {
               label="Kernel"
               value={status["current-kernel"]?.release ?? "-"}
             />
+            {sensors?.cpuTemperature !== undefined && (
+              <Stat
+                label="CPU Temp"
+                value={
+                  <span
+                    style={{
+                      color:
+                        sensors.cpuTemperature >= 90
+                          ? colors.danger
+                          : sensors.cpuTemperature >= 75
+                            ? colors.warning
+                            : colors.text,
+                    }}
+                  >
+                    {sensors.cpuTemperature.toFixed(0)}°C
+                  </span>
+                }
+              />
+            )}
           </div>
         </div>
       </Card>
@@ -282,6 +343,53 @@ export default function NodeDetail() {
       {historySeries.length > 0 && (
         <Card title="Resource History" padding={20} style={{ marginBottom: 20 }}>
           <MetricHistoryChart title="" series={historySeries} />
+        </Card>
+      )}
+
+      {temperatureSeries.length > 0 && (
+        <Card
+          title="Temperature History"
+          padding={20}
+          style={{ marginBottom: 20 }}
+        >
+          <MetricHistoryChart
+            title=""
+            series={temperatureSeries}
+            unit="°C"
+            maxValue={100}
+          />
+        </Card>
+      )}
+
+      {sensors && sensors.readings.length > 0 && (
+        <Card
+          title="Sensors"
+          subtitle={`As of ${new Date(sensors.updatedAt).toLocaleTimeString()}`}
+          actions={<Thermometer size={20} color={colors.primary} />}
+          padding={20}
+          style={{ marginBottom: 20 }}
+        >
+          <div style={{ display: "grid", gap: 6 }}>
+            {sensors.readings.map((reading, index) => (
+              <div
+                key={`${reading.chip}-${reading.label}-${index}`}
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  padding: "6px 0",
+                  borderBottom: `1px solid ${colors.border}`,
+                  fontSize: 13,
+                }}
+              >
+                <span style={{ color: colors.textSecondary }}>
+                  {reading.chip} · {reading.label}
+                </span>
+                <span style={{ color: colors.text, fontFamily: "monospace" }}>
+                  {reading.celsius.toFixed(1)}°C
+                </span>
+              </div>
+            ))}
+          </div>
         </Card>
       )}
 

@@ -18,6 +18,7 @@ import authRoutes from "./routes/auth";
 import docsRoutes from "./routes/docs";
 import { startWatchers } from "./services/watchers";
 import { startSystemAlertWatcher } from "./services/alerts";
+import { startSensorWatcher } from "./services/sensors";
 import { SESSION_COOKIE_NAME, isSessionValid } from "./services/auth";
 
 // Only these two auth endpoints are reachable before a session exists — the
@@ -106,6 +107,7 @@ async function start() {
 
     startWatchers(app);
     startSystemAlertWatcher(app);
+    startSensorWatcher(app);
 
     await app.listen({
       host: "0.0.0.0",
