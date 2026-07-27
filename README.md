@@ -48,7 +48,9 @@ The landing page is a minimal status board, designed to stay open on a second sc
 - RAM usage %
 - Storage usage %
 
-Tap a tile to jump straight into that node's full detail page. Everything else — cluster health, resource history, running guests, Docker and system overview — lives on the Proxmox page instead, one level deeper.
+...plus a Docker tile with running/stopped/paused container counts.
+
+Tap a node tile to jump straight into that node's full detail page, or the Docker tile to jump to Containers. Everything else — cluster health, resource history, running guests, Docker and system overview — lives on the Proxmox page instead, one level deeper.
 
 ---
 
@@ -235,7 +237,8 @@ This keeps the frontend simple while allowing backend integrations to evolve ind
 ## Dashboard (At a Glance)
 
 - ✅ Per-Node Status Tiles (online/offline, CPU temp, RAM %, storage %)
-- ✅ Tap-Through to Node Details
+- ✅ Docker Status Tile (running/stopped/paused)
+- ✅ Tap-Through to Node Details / Containers
 - ✅ Collapsible Sidebar
 
 ## Proxmox Page (In-Depth)

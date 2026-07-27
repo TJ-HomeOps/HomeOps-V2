@@ -5,6 +5,7 @@ import StatusBadge from "../components/StatusBadge";
 import ProgressBar from "../components/ProgressBar";
 import colors from "../theme/colors";
 import { getOverview, getNodeSensors, type ProxmoxNode } from "../api/proxmox";
+import { getDockerInfo, type DockerInfo } from "../api/docker";
 
 interface NodeStatus {
   node: ProxmoxNode;
@@ -139,12 +140,106 @@ function NodeTile({ status }: { status: NodeStatus }) {
   );
 }
 
+function DockerTile({ docker }: { docker: DockerInfo }) {
+  const navigate = useNavigate();
+  const allRunning = docker.running === docker.containers;
+
+  return (
+    <div
+      onClick={() => navigate("/containers")}
+      style={{
+        background: colors.surface,
+        border: `1px solid ${colors.border}`,
+        borderRadius: 16,
+        padding: 24,
+        cursor: "pointer",
+        transition: "border-color .15s ease",
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.borderColor = colors.primary;
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.borderColor = colors.border;
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: 20,
+        }}
+      >
+        <div style={{ color: colors.text, fontSize: 20, fontWeight: 700 }}>
+          Docker
+        </div>
+
+        <span
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 8,
+            padding: "6px 12px",
+            borderRadius: 999,
+            fontWeight: 600,
+            fontSize: 13,
+            background: allRunning ? "#0f2f1c" : "#3b2e16",
+            color: allRunning ? colors.success : colors.warning,
+          }}
+        >
+          {docker.running}/{docker.containers} running
+        </span>
+      </div>
+
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(3, 1fr)",
+          gap: 16,
+        }}
+      >
+        <div>
+          <div style={{ color: colors.textMuted, fontSize: 12, marginBottom: 4 }}>
+            Running
+          </div>
+          <div style={{ fontSize: 26, fontWeight: 700, color: colors.success }}>
+            {docker.running}
+          </div>
+        </div>
+
+        <div>
+          <div style={{ color: colors.textMuted, fontSize: 12, marginBottom: 4 }}>
+            Stopped
+          </div>
+          <div style={{ fontSize: 26, fontWeight: 700, color: colors.textMuted }}>
+            {docker.stopped}
+          </div>
+        </div>
+
+        <div>
+          <div style={{ color: colors.textMuted, fontSize: 12, marginBottom: 4 }}>
+            Paused
+          </div>
+          <div style={{ fontSize: 26, fontWeight: 700, color: colors.warning }}>
+            {docker.paused}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function Dashboard() {
   const [statuses, setStatuses] = useState<NodeStatus[]>([]);
+  const [dockerInfo, setDockerInfo] = useState<DockerInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
+    void getDockerInfo()
+      .then(setDockerInfo)
+      .catch(() => undefined);
+
     try {
       const overview = await getOverview();
       const clusterNames = new Map(
@@ -221,6 +316,19 @@ export default function Dashboard() {
           <NodeTile key={`${status.node.cluster}-${status.node.node}`} status={status} />
         ))}
       </div>
+
+      {dockerInfo && (
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+            gap: 20,
+            marginTop: 20,
+          }}
+        >
+          <DockerTile docker={dockerInfo} />
+        </div>
+      )}
     </>
   );
 }
