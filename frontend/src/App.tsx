@@ -1,4 +1,6 @@
+import { useState } from "react";
 import { BrowserRouter, Routes, Route, NavLink } from "react-router-dom";
+import { Menu } from "lucide-react";
 
 import AuthGate from "./auth/AuthGate";
 import Dashboard from "./pages/Dashboard";
@@ -15,12 +17,26 @@ import Settings from "./pages/Settings";
 
 import "./App.css";
 
+const sidebarStorageKey = "homeops-sidebar-open";
+
 export default function App() {
+  const [sidebarOpen, setSidebarOpen] = useState(
+    () => localStorage.getItem(sidebarStorageKey) !== "false"
+  );
+
+  const toggleSidebar = () => {
+    setSidebarOpen((current) => {
+      const next = !current;
+      localStorage.setItem(sidebarStorageKey, String(next));
+      return next;
+    });
+  };
+
   return (
     <AuthGate>
       <BrowserRouter>
         <div className="layout">
-          <aside className="sidebar">
+          <aside className={`sidebar${sidebarOpen ? "" : " collapsed"}`}>
             <div className="logo">
               🏠 HomeOps
             </div>
@@ -61,6 +77,15 @@ export default function App() {
           </aside>
 
           <main className="content">
+            <button
+              type="button"
+              className="sidebar-toggle"
+              aria-label={sidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
+              onClick={toggleSidebar}
+            >
+              <Menu size={18} />
+            </button>
+
             <Routes>
               <Route path="/" element={<Dashboard />} />
               <Route path="/containers" element={<Containers />} />
