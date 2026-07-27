@@ -76,6 +76,7 @@ The frontend communicates only with the HomeOps backend, which transforms infras
 - LXC Containers
 - Resource Usage
 - Health Monitoring
+- Multi-Cluster Support — connect more than one Proxmox cluster and see them as one unified dashboard, each resource tagged with which cluster it belongs to
 
 ---
 
@@ -280,6 +281,7 @@ This keeps the frontend simple while allowing backend integrations to evolve ind
 - ✅ Container Details
 - ✅ Optional Password Protection
 - ✅ REST API Documentation (OpenAPI JSON)
+- ✅ Multi-Cluster Support
 
 ---
 
@@ -353,6 +355,10 @@ npm run dev
 
 HomeOps ships with an optional single shared-password lock for the whole app. It's **off by default** — turn it on from the Settings page once the app is running, no extra configuration needed.
 
+## Connecting more than one Proxmox cluster (optional)
+
+The `PROXMOX_URL` / `PROXMOX_TOKEN_ID` / `PROXMOX_TOKEN_SECRET` variables in `backend/.env` configure the primary cluster. To add more, set `PROXMOX_CLUSTERS` to a JSON array — see `backend/.env.example` for the exact shape. Every cluster shows up unified in the same Dashboard/Proxmox views, with each node, VM, and LXC tagged with which cluster it belongs to.
+
 ---
 
 # 🛣️ Roadmap
@@ -395,8 +401,8 @@ HomeOps ships with an optional single shared-password lock for the whole app. It
 
 - ⬜ Authentik Authentication — superseded for now by the simple [password protection](#password-protection) in Phase 3
 - ⬜ Role Based Access Control — depends on real user identity (Authentik), so on hold until that lands
-- ⬜ Multi-Cluster Support
-- ⬜ Plugin System
+- ✅ Multi-Cluster Support
+- ⬜ Plugin System — no concrete plugin in mind yet, so no architecture built for it
 - ✅ REST API Documentation
 
 ---
