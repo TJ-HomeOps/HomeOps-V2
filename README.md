@@ -156,7 +156,7 @@ This is the in-depth operations hub — everything the Dashboard deliberately le
 <img src="docs/Dashboardv2.png" width="95%" alt="Dashboard">
 </p>
 
-The Dashboard provides a complete overview of your infrastructure, including cluster health, running guests, Docker statistics, storage usage, and real-time system metrics.
+The Dashboard is deliberately minimal — a status tile per Proxmox node showing online/offline, CPU temperature, RAM %, and storage %, meant to stay open on a second screen or tablet. Tap a tile for that node's full detail page; everything in-depth (cluster health, running guests, Docker statistics, storage usage, resource history) lives on the Proxmox page below instead.
 
 ---
 
