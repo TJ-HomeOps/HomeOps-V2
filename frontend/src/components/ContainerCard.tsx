@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import ActionButton from "./ActionButton";
 import StatusBadge from "./StatusBadge";
 
@@ -43,16 +44,18 @@ export default function ContainerCard({
         }}
       >
         <div style={{ flex: 1 }}>
-          <h2
-            style={{
-              margin: 0,
-              marginBottom: 8,
-              fontSize: 22,
-              color: "#f8fafc",
-            }}
-          >
-            {container.name}
-          </h2>
+          <Link to={`/containers/${container.id}`} style={{ textDecoration: "none" }}>
+            <h2
+              style={{
+                margin: 0,
+                marginBottom: 8,
+                fontSize: 22,
+                color: "#f8fafc",
+              }}
+            >
+              {container.name}
+            </h2>
+          </Link>
 
           <p
             style={{

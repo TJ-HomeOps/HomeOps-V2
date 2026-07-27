@@ -12,6 +12,10 @@ async function request<T>(
   const response = await fetch(
     `${API_BASE_URL}${endpoint}`,
     {
+      // "include" rather than the same-origin default: the session cookie
+      // must still be sent if VITE_API_URL ever points at a different
+      // origin than the page (the backend's CORS config allows this).
+      credentials: "include",
       headers: {
         "Content-Type": "application/json",
         ...(options?.headers ?? {}),
@@ -22,9 +26,16 @@ async function request<T>(
 
   if (!response.ok) {
     const text = await response.text();
+    let message = "";
+
+    try {
+      message = (JSON.parse(text) as { message?: string }).message ?? "";
+    } catch {
+      // Not JSON; fall back to the raw text below.
+    }
 
     throw new Error(
-      text || `Request failed (${response.status})`
+      message || text || `Request failed (${response.status})`
     );
   }
 

@@ -6,11 +6,15 @@ import {
     type CSSProperties,
     type ReactNode
 } from "react";
+import { useNavigate } from "react-router-dom";
 import PageHeader from "../components/PageHeader";
 import MetricCard from "../components/MetricCard";
 import NodeCard from "../components/NodeCard";
 import HealthCard from "../components/HealthCard";
 import Button from "../components/common/Button";
+import MetricHistoryChart, {
+    type MetricChartSeries
+} from "../components/MetricHistoryChart";
 import colors from "../theme/colors";
 import {
     getOverview,
@@ -27,6 +31,17 @@ import {
     formatUptime,
     type SystemInfo
 } from "../api/system";
+import { getMetrics, type MetricsResponse } from "../api/metrics";
+import { subscribeToLiveUpdates } from "../api/ws";
+
+// Validated dark-mode categorical slots 1-3 (blue/orange/aqua) from the
+// dataviz palette — these three clear the CVD/contrast gates as a set for
+// small multiples, unlike an arbitrary hue choice.
+const historyColors = {
+    cpu: "#3987e5",
+    memory: "#d95926",
+    disk: "#199e70"
+};
 type DashboardData = {
     overview: ProxmoxOverview;
     docker: DockerInfo;
@@ -69,11 +84,13 @@ const percent = (value: number | null | undefined = 0) => {
     return Math.round(result);
 };
 const Dashboard = () => {
+    const navigate = useNavigate();
     const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [searchText, setSearchText] = useState("");
+    const [metrics, setMetrics] = useState<MetricsResponse>({});
 const loadDashboard = useCallback(async (initialLoad = false) => {
     if (initialLoad) {
         setLoading(true);
@@ -107,7 +124,6 @@ const loadDashboard = useCallback(async (initialLoad = false) => {
     }
 }, []);
 
-const handleOverview = useCallback(() => undefined, []);
 const handleShell = useCallback(() => undefined, []);
 const handleRestart = useCallback(() => undefined, []);
 
@@ -120,6 +136,38 @@ useEffect(() => {
 
     return () => window.clearInterval(refreshInterval);
 }, [loadDashboard]);
+
+useEffect(() => {
+    const loadMetrics = () => {
+        void getMetrics()
+            .then(setMetrics)
+            .catch(() => undefined);
+    };
+
+    loadMetrics();
+
+    const metricsInterval = window.setInterval(loadMetrics, 30_000);
+
+    return () => window.clearInterval(metricsInterval);
+}, []);
+
+useEffect(() => {
+    return subscribeToLiveUpdates((message) => {
+        if (message.type !== "metric.point") {
+            return;
+        }
+
+        setMetrics((current) => {
+            const existing = current[message.key];
+            const points = existing ? [...existing.points, message.point] : [message.point];
+
+            return {
+                ...current,
+                [message.key]: { label: message.label, points }
+            };
+        });
+    });
+}, []);
 
 const nodes = dashboardData?.overview.nodes ?? [];
 const vms = dashboardData?.overview.vms ?? [];
@@ -196,6 +244,69 @@ const clusterMetrics = useMemo(() => {
         ) / nodes.length
     };
 }, [memoryUsage, nodes, storageUsage]);
+
+const historyCharts = useMemo(() => {
+    const groups = new Map<
+        string,
+        { title: string; series: MetricChartSeries[] }
+    >();
+
+    const metricLabels: Record<string, string> = {
+        cpu: "CPU",
+        memory: "Memory",
+        disk: "Disk"
+    };
+
+    for (const [key, series] of Object.entries(metrics)) {
+        let entityKey: string;
+        let entityTitle: string;
+        let metric: string;
+
+        if (key.startsWith("system:")) {
+            metric = key.slice("system:".length);
+            entityKey = "system";
+            entityTitle = "Backend host";
+        } else if (key.startsWith("proxmox:node:")) {
+            const rest = key.slice("proxmox:node:".length);
+            const separatorIndex = rest.lastIndexOf(":");
+            const nodeName = rest.slice(0, separatorIndex);
+            metric = rest.slice(separatorIndex + 1);
+            entityKey = `proxmox:node:${nodeName}`;
+            entityTitle = `Node ${nodeName}`;
+        } else {
+            continue;
+        }
+
+        const color = historyColors[metric as keyof typeof historyColors];
+
+        if (!color) {
+            continue;
+        }
+
+        const group = groups.get(entityKey) ?? {
+            title: entityTitle,
+            series: []
+        };
+
+        group.series.push({
+            key: metric,
+            label: metricLabels[metric] ?? metric,
+            color,
+            points: series.points
+        });
+
+        groups.set(entityKey, group);
+    }
+
+    const order = ["cpu", "memory", "disk"];
+
+    return Array.from(groups.values()).map((group) => ({
+        ...group,
+        series: [...group.series].sort(
+            (a, b) => order.indexOf(a.key) - order.indexOf(b.key)
+        )
+    }));
+}, [metrics]);
 
 const filteredVms = useMemo(() => {
     const query = searchText.trim().toLowerCase();
@@ -438,13 +549,34 @@ return (
                         vmCount={guestCounts[node.node]?.vms ?? 0}
                         lxcCount={guestCounts[node.node]?.lxcs ?? 0}
                         uptime={formatUptime(node.uptime)}
-                        onOverview={handleOverview}
+                        onOverview={() => navigate(`/proxmox/nodes/${node.node}`)}
                         onShell={handleShell}
                         onRestart={handleRestart}
                     />
                 ))}
             </div>
         </section>
+
+        {historyCharts.length > 0 && (
+            <section style={sectionStyle}>
+                <h2 style={{ ...headingStyle, marginBottom: "16px" }}>
+                    Resource History
+                </h2>
+                <div
+                    className="dashboard-grid nodes-grid"
+                    style={{ gap: "16px" }}
+                >
+                    {historyCharts.map((chart) => (
+                        <div key={chart.title} style={cardStyle}>
+                            <MetricHistoryChart
+                                title={chart.title}
+                                series={chart.series}
+                            />
+                        </div>
+                    ))}
+                </div>
+            </section>
+        )}
 
         <section style={sectionStyle}>
             <div style={cardStyle}>

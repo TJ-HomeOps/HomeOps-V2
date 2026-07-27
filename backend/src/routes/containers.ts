@@ -1,5 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import { portainer } from "../services/portainer";
+import { describeErrorDetail, recordAuditEntry } from "../services/audit";
 
 export default async function containerRoutes(app: FastifyInstance) {
   app.get("/api/containers", async (_, reply) => {
@@ -52,65 +53,110 @@ export default async function containerRoutes(app: FastifyInstance) {
   });
 
   app.post("/api/containers/:id/start", async (request: any, reply) => {
+    const { id } = request.params;
+
     try {
       const endpoints = await portainer.get("/endpoints");
       const endpointId = endpoints.data[0].Id;
 
-      const { id } = request.params;
-
       await portainer.post(
         `/endpoints/${endpointId}/docker/containers/${id}/start`
       );
+
+      await recordAuditEntry({
+        action: "container.start",
+        target: id,
+        result: "success",
+      });
 
       return {
         success: true,
         message: "Container started.",
       };
     } catch (err: any) {
-      console.error(err.response?.data || err.message);
-      reply.code(500).send(err.response?.data || err.message);
+      const detail = err.response?.data || err.message;
+
+      await recordAuditEntry({
+        action: "container.start",
+        target: id,
+        result: "failure",
+        detail: describeErrorDetail(detail),
+      });
+
+      console.error(detail);
+      reply.code(500).send(detail);
     }
   });
 
   app.post("/api/containers/:id/stop", async (request: any, reply) => {
+    const { id } = request.params;
+
     try {
       const endpoints = await portainer.get("/endpoints");
       const endpointId = endpoints.data[0].Id;
 
-      const { id } = request.params;
-
       await portainer.post(
         `/endpoints/${endpointId}/docker/containers/${id}/stop`
       );
+
+      await recordAuditEntry({
+        action: "container.stop",
+        target: id,
+        result: "success",
+      });
 
       return {
         success: true,
         message: "Container stopped.",
       };
     } catch (err: any) {
-      console.error(err.response?.data || err.message);
-      reply.code(500).send(err.response?.data || err.message);
+      const detail = err.response?.data || err.message;
+
+      await recordAuditEntry({
+        action: "container.stop",
+        target: id,
+        result: "failure",
+        detail: describeErrorDetail(detail),
+      });
+
+      console.error(detail);
+      reply.code(500).send(detail);
     }
   });
 
   app.post("/api/containers/:id/restart", async (request: any, reply) => {
+    const { id } = request.params;
+
     try {
       const endpoints = await portainer.get("/endpoints");
       const endpointId = endpoints.data[0].Id;
 
-      const { id } = request.params;
-
       await portainer.post(
         `/endpoints/${endpointId}/docker/containers/${id}/restart`
       );
+
+      await recordAuditEntry({
+        action: "container.restart",
+        target: id,
+        result: "success",
+      });
 
       return {
         success: true,
         message: "Container restarted.",
       };
     } catch (err: any) {
-      console.error(err.response?.data || err.message);
-      reply.code(500).send(err.response?.data || err.message);
+      const detail = err.response?.data || err.message;
+
+      await recordAuditEntry({
+        action: "container.restart",
+        target: id,
+        result: "failure",
+        detail: describeErrorDetail(detail),
+      });
+
+      console.error(detail);
+      reply.code(500).send(detail);
     }
   });
 

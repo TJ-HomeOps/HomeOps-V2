@@ -36,6 +36,37 @@ export async function getOverview() {
   return api.get<ProxmoxOverview>("/api/proxmox/overview");
 }
 
+export interface ProxmoxNodeDetail {
+  node: string;
+  status: Record<string, any>;
+  storage: Array<Record<string, any>>;
+}
+
+export interface ProxmoxGuestDetail {
+  node: string;
+  vmid: number;
+  status: Record<string, any>;
+  config: Record<string, any>;
+}
+
+export function getNodeDetail(node: string): Promise<ProxmoxNodeDetail> {
+  return api.get<ProxmoxNodeDetail>(`/api/proxmox/nodes/${node}`);
+}
+
+export function getVmDetail(
+  node: string,
+  vmid: number | string
+): Promise<ProxmoxGuestDetail> {
+  return api.get<ProxmoxGuestDetail>(`/api/proxmox/vms/${node}/${vmid}`);
+}
+
+export function getLxcDetail(
+  node: string,
+  vmid: number | string
+): Promise<ProxmoxGuestDetail> {
+  return api.get<ProxmoxGuestDetail>(`/api/proxmox/lxc/${node}/${vmid}`);
+}
+
 async function powerAction(
   node: string,
   type: "qemu" | "lxc",

@@ -15,6 +15,7 @@ export interface InputProps {
   disabled?: boolean;
   required?: boolean;
   readOnly?: boolean;
+  autoFocus?: boolean;
 
   error?: string;
   helperText?: string;
@@ -41,6 +42,7 @@ export default function Input({
   disabled = false,
   required = false,
   readOnly = false,
+  autoFocus = false,
 
   error,
   helperText,
@@ -121,6 +123,7 @@ export default function Input({
           defaultValue={defaultValue}
           readOnly={readOnly}
           disabled={disabled}
+          autoFocus={autoFocus}
           placeholder={placeholder}
           onChange={(e) => onChange?.(e.target.value)}
           style={{

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import {
   getOverview,
   startVM,
@@ -232,14 +233,19 @@ export default function Proxmox() {
               }}
             >
               <div>
-                <h3
-                  style={{
-                    color: "#fff",
-                    margin: 0,
-                  }}
+                <Link
+                  to={`/proxmox/vms/${vm.node}/${vm.vmid}`}
+                  style={{ textDecoration: "none" }}
                 >
-                  {vm.name}
-                </h3>
+                  <h3
+                    style={{
+                      color: "#fff",
+                      margin: 0,
+                    }}
+                  >
+                    {vm.name}
+                  </h3>
+                </Link>
 
                 <div
                   style={{
@@ -305,14 +311,19 @@ export default function Proxmox() {
               }}
             >
               <div>
-                <h3
-                  style={{
-                    color: "#fff",
-                    margin: 0,
-                  }}
+                <Link
+                  to={`/proxmox/lxc/${lxc.node}/${lxc.vmid}`}
+                  style={{ textDecoration: "none" }}
                 >
-                  {lxc.name}
-                </h3>
+                  <h3
+                    style={{
+                      color: "#fff",
+                      margin: 0,
+                    }}
+                  >
+                    {lxc.name}
+                  </h3>
+                </Link>
 
                 <div
                   style={{

@@ -2,6 +2,7 @@ import { spawn } from "node:child_process";
 import { mkdir, readFile, rm, stat } from "node:fs/promises";
 import { join } from "node:path";
 import type { FastifyInstance } from "fastify";
+import { recordNotification } from "../services/notifications";
 
 const cameraName = "Tapo C100";
 const hlsDirectory = join(process.cwd(), "data", "camera-hls");
@@ -13,6 +14,10 @@ type RelayState = "not-configured" | "ready" | "starting";
 
 let relayProcess: ReturnType<typeof spawn> | null = null;
 let relayStartup: Promise<boolean> | null = null;
+
+// Set right before the onClose hook kills the relay, so that expected exit
+// doesn't get reported as an unexpected stop.
+let shuttingDown = false;
 
 function getCameraStreamUrl(): string | undefined {
   const streamUrl = process.env.TAPO_C100_RTSP_URL?.trim();
@@ -96,6 +101,13 @@ async function spawnRelay(
     if (relayProcess === child) {
       relayProcess = null;
     }
+
+    void recordNotification({
+      source: "camera",
+      severity: "critical",
+      title: "Camera relay failed to start",
+      message: error.message,
+    });
   });
 
   child.once("exit", (code) => {
@@ -104,9 +116,36 @@ async function spawnRelay(
     if (relayProcess === child) {
       relayProcess = null;
     }
+
+    if (!shuttingDown) {
+      void recordNotification({
+        source: "camera",
+        severity: "warning",
+        title: "Camera relay stopped",
+        message: `The camera relay exited unexpectedly (code ${code ?? "unknown"}).`,
+      });
+    }
   });
 
-  return waitForPlaylist();
+  const ready = await waitForPlaylist();
+
+  void recordNotification(
+    ready
+      ? {
+          source: "camera",
+          severity: "info",
+          title: "Camera relay started",
+          message: "The Tapo C100 live camera relay is streaming.",
+        }
+      : {
+          source: "camera",
+          severity: "critical",
+          title: "Camera relay did not start",
+          message: "The camera relay did not produce a stream in time.",
+        }
+  );
+
+  return ready;
 }
 
 async function ensureRelay(app: FastifyInstance): Promise<RelayState> {
@@ -156,6 +195,7 @@ async function waitForPlaylist(): Promise<boolean> {
 
 export default async function cameraRoutes(app: FastifyInstance) {
   app.addHook("onClose", async () => {
+    shuttingDown = true;
     relayProcess?.kill("SIGTERM");
   });
 

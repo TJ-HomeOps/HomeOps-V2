@@ -1,5 +1,6 @@
 import Fastify from "fastify";
 import cors from "@fastify/cors";
+import websocketPlugin from "@fastify/websocket";
 
 import healthRoutes from "./routes/health";
 import endpointRoutes from "./routes/endpoints";
@@ -8,6 +9,42 @@ import systemRoutes from "./routes/system";
 import containerRoutes from "./routes/containers";
 import proxmoxRoutes from "./routes/proxmox";
 import cameraRoutes from "./routes/camera";
+import notificationRoutes from "./routes/notifications";
+import metricsRoutes from "./routes/metrics";
+import auditRoutes from "./routes/audit";
+import wsRoutes from "./routes/ws";
+import authRoutes from "./routes/auth";
+import { startWatchers } from "./services/watchers";
+import { startSystemAlertWatcher } from "./services/alerts";
+import { SESSION_COOKIE_NAME, isSessionValid } from "./services/auth";
+
+// Only these two auth endpoints are reachable before a session exists — the
+// rest, including /api/auth/enable and /api/auth/disable, are covered by the
+// lockEnabled check inside isSessionValid, since enabling requires no prior
+// session only while the lock is currently off.
+const publicAuthPaths = new Set(["/api/auth/status", "/api/auth/login"]);
+
+function readSessionCookie(header: string | undefined): string | undefined {
+  if (!header) {
+    return undefined;
+  }
+
+  for (const part of header.split(";")) {
+    const separatorIndex = part.indexOf("=");
+
+    if (separatorIndex === -1) {
+      continue;
+    }
+
+    const key = part.slice(0, separatorIndex).trim();
+
+    if (key === SESSION_COOKIE_NAME) {
+      return decodeURIComponent(part.slice(separatorIndex + 1).trim());
+    }
+  }
+
+  return undefined;
+}
 
 const app = Fastify({
   logger: true,
@@ -20,9 +57,27 @@ async function start() {
         "http://192.168.0.20:5173",
         "http://localhost:5173",
       ],
+      credentials: true,
+    });
+    await app.register(websocketPlugin);
+
+    app.addHook("onRequest", async (request, reply) => {
+      const path = request.url.split("?")[0] ?? request.url;
+
+      if (publicAuthPaths.has(path)) {
+        return;
+      }
+
+      const token = readSessionCookie(request.headers.cookie);
+      const valid = await isSessionValid(token);
+
+      if (!valid) {
+        reply.code(401).send({ message: "Authentication required." });
+      }
     });
 
     // Register API routes
+    await app.register(authRoutes);
     await app.register(healthRoutes);
     await app.register(endpointRoutes);
     await app.register(dockerRoutes);
@@ -30,6 +85,13 @@ async function start() {
     await app.register(containerRoutes);
     await app.register(proxmoxRoutes);
     await app.register(cameraRoutes);
+    await app.register(notificationRoutes);
+    await app.register(metricsRoutes);
+    await app.register(auditRoutes);
+    await app.register(wsRoutes);
+
+    startWatchers(app);
+    startSystemAlertWatcher(app);
 
     await app.listen({
       host: "0.0.0.0",
@@ -41,6 +103,17 @@ async function start() {
     app.log.error(err);
     process.exit(1);
   }
+}
+
+// tsx watch (and any other supervisor) kills the process directly with
+// SIGTERM on every restart. Fastify's onClose hooks — which is how the
+// camera route stops its ffmpeg relay — only run via app.close(), so without
+// this handler every restart orphaned the relay process instead of stopping
+// it.
+for (const signal of ["SIGTERM", "SIGINT"] as const) {
+  process.on(signal, () => {
+    void app.close().finally(() => process.exit(0));
+  });
 }
 
 start();

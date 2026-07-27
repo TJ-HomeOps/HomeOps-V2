@@ -1,142 +1,164 @@
-import { useEffect, useRef, useState } from "react";
-import Hls from "hls.js";
-import { Expand, RefreshCw, Video } from "lucide-react";
-import { getCameraStreamUrl, getTapoC100Camera } from "../api/camera";
-import type { TapoC100Camera } from "../api/camera";
+import type { ReactNode } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { Bell, Box, Camera, Check, Server } from "lucide-react";
+import {
+  getNotifications,
+  markAllNotificationsRead,
+  markNotificationRead,
+} from "../api/notifications";
+import type {
+  AppNotification,
+  NotificationSeverity,
+  NotificationSource,
+} from "../api/notifications";
+import { subscribeToLiveUpdates } from "../api/ws";
 import PageHeader from "../components/PageHeader";
 import Alert from "../components/common/Alert";
 import Button from "../components/common/Button";
 import Card from "../components/common/Card";
-import Modal from "../components/common/Modal";
 import Spinner from "../components/common/Spinner";
 import colors from "../theme/colors";
 
-interface CameraPlayerProps {
-  streamUrl: string;
-  label: string;
-  onError: (message: string) => void;
-}
+const pollIntervalMs = 15000;
 
-function CameraPlayer({ streamUrl, label, onError }: CameraPlayerProps) {
-  const videoRef = useRef<HTMLVideoElement>(null);
+const severityColors: Record<NotificationSeverity, string> = {
+  info: colors.primary,
+  warning: colors.warning,
+  critical: colors.danger,
+};
 
-  useEffect(() => {
-    const video = videoRef.current;
+const sourceIcons: Record<NotificationSource, ReactNode> = {
+  proxmox: <Server size={16} />,
+  docker: <Box size={16} />,
+  camera: <Camera size={16} />,
+  system: <Bell size={16} />,
+};
 
-    if (!video) {
-      return;
-    }
+const sourceLabels: Record<NotificationSource, string> = {
+  proxmox: "Proxmox",
+  docker: "Docker",
+  camera: "Camera",
+  system: "System",
+};
 
-    const handleNativeError = () => {
-      onError("Unable to play the live camera stream.");
-    };
-
-    if (video.canPlayType("application/vnd.apple.mpegurl")) {
-      video.src = streamUrl;
-      video.addEventListener("error", handleNativeError);
-
-      return () => {
-        video.removeEventListener("error", handleNativeError);
-        video.removeAttribute("src");
-        video.load();
-      };
-    }
-
-    if (!Hls.isSupported()) {
-      onError("This browser does not support HLS camera playback.");
-      return;
-    }
-
-    const hls = new Hls({
-      enableWorker: true,
-      lowLatencyMode: true,
-    });
-
-    hls.loadSource(streamUrl);
-    hls.attachMedia(video);
-    hls.on(Hls.Events.ERROR, (_event, data) => {
-      if (data.fatal) {
-        onError("The live camera stream could not be loaded.");
-      }
-    });
-
-    return () => {
-      hls.destroy();
-    };
-  }, [onError, streamUrl]);
-
-  return (
-    <video
-      ref={videoRef}
-      autoPlay
-      controls
-      muted
-      playsInline
-      aria-label={label}
-      style={{
-        display: "block",
-        width: "100%",
-        aspectRatio: "16 / 9",
-        background: colors.black,
-        borderRadius: 10,
-        objectFit: "contain",
-      }}
-    />
-  );
+function formatTimestamp(value: string): string {
+  return new Date(value).toLocaleString();
 }
 
 export default function Notifications() {
-  const [camera, setCamera] = useState<TapoC100Camera | null>(null);
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [viewerOpen, setViewerOpen] = useState(false);
-  const [refreshKey, setRefreshKey] = useState(0);
 
-  const loadCamera = async () => {
-    setLoading(true);
-    setError(null);
-
+  const loadNotifications = useCallback(async () => {
     try {
-      const data = await getTapoC100Camera();
-      setCamera(data);
+      const data = await getNotifications();
+      setNotifications(data);
+      setError(null);
     } catch {
-      setCamera(null);
-      setError("Unable to load the camera status.");
+      setError("Unable to load notifications.");
     } finally {
       setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    void loadCamera();
   }, []);
 
-  const streamUrl =
-    camera?.configured && camera.streamPath
-      ? `${getCameraStreamUrl(camera.streamPath)}?refresh=${refreshKey}`
-      : null;
+  useEffect(() => {
+    void loadNotifications();
+
+    const timer = setInterval(() => {
+      void loadNotifications();
+    }, pollIntervalMs);
+
+    return () => clearInterval(timer);
+  }, [loadNotifications]);
+
+  useEffect(() => {
+    return subscribeToLiveUpdates((message) => {
+      if (message.type === "notification.created") {
+        const notification = message.data as AppNotification;
+
+        setNotifications((current) =>
+          current.some((item) => item.id === notification.id)
+            ? current
+            : [notification, ...current]
+        );
+
+        return;
+      }
+
+      if (message.type === "notification.read") {
+        setNotifications((current) =>
+          current.map((item) =>
+            item.id === message.id ? { ...item, read: true } : item
+          )
+        );
+
+        return;
+      }
+
+      if (message.type === "notification.read-all") {
+        setNotifications((current) =>
+          current.map((item) => ({ ...item, read: true }))
+        );
+      }
+    });
+  }, []);
+
+  const unreadCount = notifications.filter((item) => !item.read).length;
+
+  const handleMarkRead = async (id: string) => {
+    setNotifications((current) =>
+      current.map((item) =>
+        item.id === id ? { ...item, read: true } : item
+      )
+    );
+
+    try {
+      await markNotificationRead(id);
+    } catch {
+      void loadNotifications();
+    }
+  };
+
+  const handleMarkAllRead = async () => {
+    setNotifications((current) =>
+      current.map((item) => ({ ...item, read: true }))
+    );
+
+    try {
+      await markAllNotificationsRead();
+    } catch {
+      void loadNotifications();
+    }
+  };
 
   return (
     <>
       <PageHeader
         title="Notifications"
-        subtitle="Security activity and operational alerts"
+        subtitle={
+          unreadCount > 0
+            ? `${unreadCount} unread`
+            : "Operational alerts and system activity"
+        }
       >
-        <Button
-          variant="outline"
-          size="sm"
-          leftIcon={<RefreshCw size={16} />}
-          onClick={() => {
-            void loadCamera();
-          }}
-        >
-          Refresh
-        </Button>
+        {unreadCount > 0 && (
+          <Button
+            variant="outline"
+            size="sm"
+            leftIcon={<Check size={16} />}
+            onClick={() => {
+              void handleMarkAllRead();
+            }}
+          >
+            Mark all as read
+          </Button>
+        )}
       </PageHeader>
 
       {error && (
         <Alert
-          title="Camera unavailable"
+          title="Notifications unavailable"
           variant="danger"
           style={{ marginBottom: 20 }}
         >
@@ -145,98 +167,117 @@ export default function Notifications() {
       )}
 
       <Card
-        title="Security camera"
-        subtitle="Live view"
-        actions={<Video size={20} color={colors.primary} />}
+        title="Recent activity"
+        subtitle="Updates from Proxmox, Docker, and the security camera"
+        actions={<Bell size={20} color={colors.primary} />}
         padding={20}
       >
         {loading && (
           <div style={{ padding: "48px 0" }}>
-            <Spinner label="Checking camera status" />
+            <Spinner label="Loading notifications" />
           </div>
         )}
 
-        {!loading && !camera?.configured && (
-          <Alert title="Camera setup required" variant="info">
-            Point TAPO_C100_RTSP_URL in backend/.env at the go2rtc relay, for
-            example rtsp://127.0.0.1:8554/tapo-c100. The camera account itself
-            lives only in the go2rtc config, so no credentials reach HomeOps.
-          </Alert>
+        {!loading && notifications.length === 0 && (
+          <div
+            style={{
+              padding: "48px 0",
+              textAlign: "center",
+              color: colors.textSecondary,
+            }}
+          >
+            There are no notifications yet.
+          </div>
         )}
 
-        {!loading && streamUrl && (
-          <div style={{ display: "grid", gap: 16 }}>
-            <CameraPlayer
-              key={streamUrl}
-              streamUrl={streamUrl}
-              label="Tapo C100 live camera preview"
-              onError={setError}
-            />
-
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                gap: 16,
-                flexWrap: "wrap",
-              }}
-            >
-              <div>
-                <div style={{ color: colors.text, fontWeight: 700 }}>
-                  {camera?.name ?? "Tapo C100"}
-                </div>
+        {!loading && notifications.length > 0 && (
+          <div style={{ display: "grid", gap: 10 }}>
+            {notifications.map((notification) => (
+              <div
+                key={notification.id}
+                onClick={() => {
+                  if (!notification.read) {
+                    void handleMarkRead(notification.id);
+                  }
+                }}
+                style={{
+                  display: "flex",
+                  gap: 14,
+                  alignItems: "flex-start",
+                  padding: 14,
+                  borderRadius: 10,
+                  background: notification.read
+                    ? colors.surface
+                    : colors.surfaceAlt,
+                  borderLeft: `4px solid ${severityColors[notification.severity]}`,
+                  cursor: notification.read ? "default" : "pointer",
+                }}
+              >
                 <div
                   style={{
-                    color: colors.success,
-                    fontSize: 13,
-                    marginTop: 4,
+                    color: severityColors[notification.severity],
+                    marginTop: 2,
                   }}
                 >
-                  Live relay enabled
+                  {sourceIcons[notification.source]}
                 </div>
-              </div>
 
-              <div style={{ display: "flex", gap: 10 }}>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  leftIcon={<RefreshCw size={16} />}
-                  onClick={() => {
-                    setError(null);
-                    setRefreshKey((current) => current + 1);
-                  }}
-                >
-                  Reload stream
-                </Button>
-                <Button
-                  size="sm"
-                  leftIcon={<Expand size={16} />}
-                  onClick={() => setViewerOpen(true)}
-                >
-                  Expand
-                </Button>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      gap: 12,
+                      flexWrap: "wrap",
+                    }}
+                  >
+                    <div style={{ color: colors.text, fontWeight: 700 }}>
+                      {notification.title}
+                    </div>
+
+                    <div style={{ color: colors.textMuted, fontSize: 12 }}>
+                      {formatTimestamp(notification.createdAt)}
+                    </div>
+                  </div>
+
+                  <div
+                    style={{
+                      color: colors.textSecondary,
+                      fontSize: 14,
+                      marginTop: 4,
+                    }}
+                  >
+                    {notification.message}
+                  </div>
+
+                  <div
+                    style={{
+                      color: colors.textMuted,
+                      fontSize: 12,
+                      marginTop: 6,
+                    }}
+                  >
+                    {sourceLabels[notification.source]}
+                  </div>
+                </div>
+
+                {!notification.read && (
+                  <span
+                    style={{
+                      width: 8,
+                      height: 8,
+                      borderRadius: "50%",
+                      background: colors.primary,
+                      marginTop: 6,
+                      flexShrink: 0,
+                    }}
+                  />
+                )}
               </div>
-            </div>
+            ))}
           </div>
         )}
       </Card>
-
-      {streamUrl && (
-        <Modal
-          open={viewerOpen}
-          title={`${camera?.name ?? "Security camera"} live view`}
-          width={1000}
-          onClose={() => setViewerOpen(false)}
-        >
-          <CameraPlayer
-            key={`${streamUrl}-expanded`}
-            streamUrl={streamUrl}
-            label="Tapo C100 expanded live camera view"
-            onError={setError}
-          />
-        </Modal>
-      )}
     </>
   );
 }
