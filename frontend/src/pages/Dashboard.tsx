@@ -266,12 +266,21 @@ const historyCharts = useMemo(() => {
             metric = key.slice("system:".length);
             entityKey = "system";
             entityTitle = "Backend host";
-        } else if (key.startsWith("proxmox:node:")) {
-            const rest = key.slice("proxmox:node:".length);
-            const separatorIndex = rest.lastIndexOf(":");
-            const nodeName = rest.slice(0, separatorIndex);
-            metric = rest.slice(separatorIndex + 1);
-            entityKey = `proxmox:node:${nodeName}`;
+        } else if (key.startsWith("proxmox:")) {
+            // proxmox:<cluster>:node:<name>:<metric> — node names aren't
+            // unique across clusters, so the cluster id is part of the
+            // group key (titles can still collide visually if two clusters
+            // happen to share a node name; not worth a cluster-name lookup
+            // for that edge case yet).
+            const parts = key.split(":");
+
+            if (parts.length !== 5 || parts[2] !== "node") {
+                continue;
+            }
+
+            const nodeName = parts[3];
+            metric = parts[4]!;
+            entityKey = `proxmox:${parts[1]}:node:${nodeName}`;
             entityTitle = `Node ${nodeName}`;
         } else {
             continue;
@@ -549,7 +558,7 @@ return (
                         vmCount={guestCounts[node.node]?.vms ?? 0}
                         lxcCount={guestCounts[node.node]?.lxcs ?? 0}
                         uptime={formatUptime(node.uptime)}
-                        onOverview={() => navigate(`/proxmox/nodes/${node.node}`)}
+                        onOverview={() => navigate(`/proxmox/nodes/${node.cluster}/${node.node}`)}
                         onShell={handleShell}
                         onRestart={handleRestart}
                     />

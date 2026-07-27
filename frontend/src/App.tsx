@@ -66,13 +66,16 @@ export default function App() {
               <Route path="/containers" element={<Containers />} />
               <Route path="/containers/:id" element={<ContainerDetail />} />
               <Route path="/proxmox" element={<Proxmox />} />
-              <Route path="/proxmox/nodes/:node" element={<NodeDetail />} />
               <Route
-                path="/proxmox/vms/:node/:vmid"
+                path="/proxmox/nodes/:cluster/:node"
+                element={<NodeDetail />}
+              />
+              <Route
+                path="/proxmox/vms/:cluster/:node/:vmid"
                 element={<GuestDetail kind="qemu" />}
               />
               <Route
-                path="/proxmox/lxc/:node/:vmid"
+                path="/proxmox/lxc/:cluster/:node/:vmid"
                 element={<GuestDetail kind="lxc" />}
               />
               <Route path="/camera" element={<Camera />} />

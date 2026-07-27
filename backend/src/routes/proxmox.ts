@@ -1,44 +1,81 @@
-import type { FastifyInstance } from "fastify";
-import { proxmox } from "../services/proxmox";
+import type { FastifyInstance, FastifyReply } from "fastify";
+import { getProxmoxCluster, getProxmoxClusters } from "../services/proxmox";
 import { describeErrorDetail, recordAuditEntry } from "../services/audit";
 import type { ProxmoxResource } from "../types/proxmox";
 
+function requireCluster(clusterId: string, reply: FastifyReply) {
+  const cluster = getProxmoxCluster(clusterId);
+
+  if (!cluster) {
+    reply.code(404).send({
+      success: false,
+      message: `Unknown Proxmox cluster "${clusterId}".`,
+    });
+
+    return null;
+  }
+
+  return cluster;
+}
+
 export default async function proxmoxRoutes(app: FastifyInstance) {
   app.get("/api/proxmox/overview", async (_, reply) => {
-    try {
-      const { data } = await proxmox.get("/cluster/resources");
-      const resources = data.data as ProxmoxResource[];
+    const clusters = getProxmoxClusters();
 
-      return {
-        nodes: resources.filter((r) => r.type === "node"),
-        vms: resources.filter((r) => r.type === "qemu"),
-        lxcs: resources.filter((r) => r.type === "lxc"),
-        storage: resources.filter((r) => r.type === "storage"),
-        networks: resources.filter((r) => r.type === "network"),
-      };
-    } catch (err: any) {
-      reply.code(500).send({
-        success: false,
-        message: err.message,
-      });
-    }
+    const results = await Promise.all(
+      clusters.map(async (cluster) => {
+        try {
+          const { data } = await cluster.client.get("/cluster/resources");
+          const resources = (data.data as ProxmoxResource[]).map(
+            (resource) => ({ ...resource, cluster: cluster.id })
+          );
+
+          return { cluster, resources, ok: true as const };
+        } catch (err: any) {
+          app.log.warn(
+            { err, cluster: cluster.id },
+            "Failed to fetch Proxmox cluster resources"
+          );
+
+          return { cluster, resources: [] as ProxmoxResource[], ok: false as const };
+        }
+      })
+    );
+
+    const resources = results.flatMap((result) => result.resources);
+
+    return {
+      clusters: results.map((result) => ({
+        id: result.cluster.id,
+        name: result.cluster.name,
+        ok: result.ok,
+      })),
+      nodes: resources.filter((r) => r.type === "node"),
+      vms: resources.filter((r) => r.type === "qemu"),
+      lxcs: resources.filter((r) => r.type === "lxc"),
+      storage: resources.filter((r) => r.type === "storage"),
+      networks: resources.filter((r) => r.type === "network"),
+    };
   });
 
   // Extended single-node status (PVE/kernel version, per-core CPU, swap,
   // load average) beyond what /cluster/resources carries, plus the node's
   // storage volumes.
-  app.get<{ Params: { node: string } }>(
-    "/api/proxmox/nodes/:node",
+  app.get<{ Params: { cluster: string; node: string } }>(
+    "/api/proxmox/nodes/:cluster/:node",
     async (request, reply) => {
-      const { node } = request.params;
+      const { cluster: clusterId, node } = request.params;
+      const cluster = requireCluster(clusterId, reply);
+      if (!cluster) return;
 
       try {
         const [statusRes, storageRes] = await Promise.all([
-          proxmox.get(`/nodes/${node}/status`),
-          proxmox.get(`/nodes/${node}/storage`),
+          cluster.client.get(`/nodes/${node}/status`),
+          cluster.client.get(`/nodes/${node}/storage`),
         ]);
 
         return {
+          cluster: cluster.id,
           node,
           status: statusRes.data.data,
           storage: storageRes.data.data,
@@ -55,18 +92,21 @@ export default async function proxmoxRoutes(app: FastifyInstance) {
   // Full guest detail (live status + config) for a single VM or LXC —
   // /cluster/resources only carries summary fields, not disks/network/boot
   // config.
-  app.get<{ Params: { node: string; vmid: string } }>(
-    "/api/proxmox/vms/:node/:vmid",
+  app.get<{ Params: { cluster: string; node: string; vmid: string } }>(
+    "/api/proxmox/vms/:cluster/:node/:vmid",
     async (request, reply) => {
-      const { node, vmid } = request.params;
+      const { cluster: clusterId, node, vmid } = request.params;
+      const cluster = requireCluster(clusterId, reply);
+      if (!cluster) return;
 
       try {
         const [statusRes, configRes] = await Promise.all([
-          proxmox.get(`/nodes/${node}/qemu/${vmid}/status/current`),
-          proxmox.get(`/nodes/${node}/qemu/${vmid}/config`),
+          cluster.client.get(`/nodes/${node}/qemu/${vmid}/status/current`),
+          cluster.client.get(`/nodes/${node}/qemu/${vmid}/config`),
         ]);
 
         return {
+          cluster: cluster.id,
           node,
           vmid: Number(vmid),
           status: statusRes.data.data,
@@ -81,18 +121,21 @@ export default async function proxmoxRoutes(app: FastifyInstance) {
     }
   );
 
-  app.get<{ Params: { node: string; vmid: string } }>(
-    "/api/proxmox/lxc/:node/:vmid",
+  app.get<{ Params: { cluster: string; node: string; vmid: string } }>(
+    "/api/proxmox/lxc/:cluster/:node/:vmid",
     async (request, reply) => {
-      const { node, vmid } = request.params;
+      const { cluster: clusterId, node, vmid } = request.params;
+      const cluster = requireCluster(clusterId, reply);
+      if (!cluster) return;
 
       try {
         const [statusRes, configRes] = await Promise.all([
-          proxmox.get(`/nodes/${node}/lxc/${vmid}/status/current`),
-          proxmox.get(`/nodes/${node}/lxc/${vmid}/config`),
+          cluster.client.get(`/nodes/${node}/lxc/${vmid}/status/current`),
+          cluster.client.get(`/nodes/${node}/lxc/${vmid}/config`),
         ]);
 
         return {
+          cluster: cluster.id,
           node,
           vmid: Number(vmid),
           status: statusRes.data.data,
@@ -107,18 +150,22 @@ export default async function proxmoxRoutes(app: FastifyInstance) {
     }
   );
 
-  app.post(
-    "/api/proxmox/:node/:type/:vmid/:action",
+  app.post<{
+    Params: {
+      cluster: string;
+      node: string;
+      type: "qemu" | "lxc";
+      vmid: string;
+      action: string;
+    };
+  }>(
+    "/api/proxmox/:cluster/:node/:type/:vmid/:action",
     async (request, reply) => {
-      const { node, type, vmid, action } =
-        request.params as {
-          node: string;
-          type: "qemu" | "lxc";
-          vmid: string;
-          action: string;
-        };
+      const { cluster: clusterId, node, type, vmid, action } = request.params;
+      const cluster = requireCluster(clusterId, reply);
+      if (!cluster) return;
 
-      const target = `${type}:${vmid} on ${node}`;
+      const target = `${type}:${vmid} on ${node} (${cluster.name})`;
 
       try {
         let proxmoxAction = action;
@@ -128,7 +175,7 @@ export default async function proxmoxRoutes(app: FastifyInstance) {
           proxmoxAction = "reboot";
         }
 
-        await proxmox.post(
+        await cluster.client.post(
           `/nodes/${node}/${type}/${vmid}/status/${proxmoxAction}`,
           {}
         );

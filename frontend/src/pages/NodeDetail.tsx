@@ -59,7 +59,7 @@ function Stat({ label, value }: { label: string; value: React.ReactNode }) {
 }
 
 export default function NodeDetail() {
-  const { node } = useParams<{ node: string }>();
+  const { cluster, node } = useParams<{ cluster: string; node: string }>();
   const navigate = useNavigate();
 
   const [detail, setDetail] = useState<ProxmoxNodeDetail | null>(null);
@@ -69,11 +69,11 @@ export default function NodeDetail() {
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    if (!node) return;
+    if (!cluster || !node) return;
 
     try {
       const [detailData, overviewData] = await Promise.all([
-        getNodeDetail(node),
+        getNodeDetail(cluster, node),
         getOverview(),
       ]);
 
@@ -85,7 +85,7 @@ export default function NodeDetail() {
     } finally {
       setLoading(false);
     }
-  }, [node]);
+  }, [cluster, node]);
 
   useEffect(() => {
     void load();
@@ -101,7 +101,7 @@ export default function NodeDetail() {
   }, []);
 
   const historySeries = useMemo(() => {
-    if (!node) return [];
+    if (!cluster || !node) return [];
 
     const keys: Array<["cpu" | "memory" | "disk", string]> = [
       ["cpu", "CPU"],
@@ -111,7 +111,7 @@ export default function NodeDetail() {
 
     return keys
       .map(([metric, label]) => {
-        const series = metrics[`proxmox:node:${node}:${metric}`];
+        const series = metrics[`proxmox:${cluster}:node:${node}:${metric}`];
         if (!series) return null;
 
         return {
@@ -122,20 +122,20 @@ export default function NodeDetail() {
         };
       })
       .filter((series): series is NonNullable<typeof series> => Boolean(series));
-  }, [metrics, node]);
+  }, [metrics, cluster, node]);
 
   const guests = useMemo(() => {
-    if (!overview || !node) return [];
+    if (!overview || !cluster || !node) return [];
 
     return [
       ...overview.vms
-        .filter((vm) => vm.node === node)
+        .filter((vm) => vm.cluster === cluster && vm.node === node)
         .map((vm) => ({ ...vm, kind: "qemu" as const })),
       ...overview.lxcs
-        .filter((lxc) => lxc.node === node)
+        .filter((lxc) => lxc.cluster === cluster && lxc.node === node)
         .map((lxc) => ({ ...lxc, kind: "lxc" as const })),
     ];
-  }, [overview, node]);
+  }, [overview, cluster, node]);
 
   if (loading) {
     return (
@@ -159,6 +159,9 @@ export default function NodeDetail() {
 
   if (!detail) return null;
 
+  const clusterName =
+    overview?.clusters.find((c) => c.id === detail.cluster)?.name ??
+    detail.cluster;
   const status = detail.status;
   const cpuPercent = Math.round((status.cpu ?? 0) * 100);
   const memPercent =
@@ -172,7 +175,7 @@ export default function NodeDetail() {
 
   return (
     <>
-      <PageHeader title={detail.node} subtitle="Proxmox node">
+      <PageHeader title={detail.node} subtitle={`Proxmox node · ${clusterName}`}>
         <Button
           variant="outline"
           size="sm"
@@ -335,7 +338,7 @@ export default function NodeDetail() {
             {guests.map((guest) => (
               <Link
                 key={`${guest.kind}-${guest.vmid}`}
-                to={`/proxmox/${guest.kind === "qemu" ? "vms" : "lxc"}/${guest.node}/${guest.vmid}`}
+                to={`/proxmox/${guest.kind === "qemu" ? "vms" : "lxc"}/${guest.cluster}/${guest.node}/${guest.vmid}`}
                 style={{
                   display: "flex",
                   justifyContent: "space-between",

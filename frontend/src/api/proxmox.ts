@@ -1,5 +1,11 @@
 import { api } from "./client";
 
+export interface ProxmoxClusterSummary {
+  id: string;
+  name: string;
+  ok: boolean;
+}
+
 export interface ProxmoxResource {
   id: string;
   node: string;
@@ -9,6 +15,7 @@ export interface ProxmoxResource {
   cpu: number;
   mem: number;
   maxmem: number;
+  cluster: string;
 }
 
 export interface ProxmoxNode {
@@ -22,9 +29,11 @@ export interface ProxmoxNode {
   maxdisk: number;
   maxcpu: number;
   uptime: number;
+  cluster: string;
 }
 
 export interface ProxmoxOverview {
+  clusters: ProxmoxClusterSummary[];
   nodes: ProxmoxNode[];
   vms: ProxmoxResource[];
   lxcs: ProxmoxResource[];
@@ -37,68 +46,80 @@ export async function getOverview() {
 }
 
 export interface ProxmoxNodeDetail {
+  cluster: string;
   node: string;
   status: Record<string, any>;
   storage: Array<Record<string, any>>;
 }
 
 export interface ProxmoxGuestDetail {
+  cluster: string;
   node: string;
   vmid: number;
   status: Record<string, any>;
   config: Record<string, any>;
 }
 
-export function getNodeDetail(node: string): Promise<ProxmoxNodeDetail> {
-  return api.get<ProxmoxNodeDetail>(`/api/proxmox/nodes/${node}`);
+export function getNodeDetail(
+  cluster: string,
+  node: string
+): Promise<ProxmoxNodeDetail> {
+  return api.get<ProxmoxNodeDetail>(`/api/proxmox/nodes/${cluster}/${node}`);
 }
 
 export function getVmDetail(
+  cluster: string,
   node: string,
   vmid: number | string
 ): Promise<ProxmoxGuestDetail> {
-  return api.get<ProxmoxGuestDetail>(`/api/proxmox/vms/${node}/${vmid}`);
+  return api.get<ProxmoxGuestDetail>(
+    `/api/proxmox/vms/${cluster}/${node}/${vmid}`
+  );
 }
 
 export function getLxcDetail(
+  cluster: string,
   node: string,
   vmid: number | string
 ): Promise<ProxmoxGuestDetail> {
-  return api.get<ProxmoxGuestDetail>(`/api/proxmox/lxc/${node}/${vmid}`);
+  return api.get<ProxmoxGuestDetail>(
+    `/api/proxmox/lxc/${cluster}/${node}/${vmid}`
+  );
 }
 
 async function powerAction(
+  cluster: string,
   node: string,
   type: "qemu" | "lxc",
   vmid: number,
   action: "start" | "stop" | "restart"
 ) {
   return api.post(
-    `/api/proxmox/${node}/${type}/${vmid}/${action}`,
+    `/api/proxmox/${cluster}/${node}/${type}/${vmid}/${action}`,
     {}
   );
 }
 
-export function startVM(node: string, vmid: number) {
-  return powerAction(node, "qemu", vmid, "start");
+export function startVM(cluster: string, node: string, vmid: number) {
+  return powerAction(cluster, node, "qemu", vmid, "start");
 }
 
-export function stopVM(node: string, vmid: number) {
-  return powerAction(node, "qemu", vmid, "stop");
+export function stopVM(cluster: string, node: string, vmid: number) {
+  return powerAction(cluster, node, "qemu", vmid, "stop");
 }
 
-export function restartVM(node: string, vmid: number) {
-  return powerAction(node, "qemu", vmid, "restart");
+export function restartVM(cluster: string, node: string, vmid: number) {
+  return powerAction(cluster, node, "qemu", vmid, "restart");
 }
 
-export function startLXC(node: string, vmid: number) {
-  return powerAction(node, "lxc", vmid, "start");
+export function startLXC(cluster: string, node: string, vmid: number) {
+  return powerAction(cluster, node, "lxc", vmid, "start");
 }
 
-export function stopLXC(node: string, vmid: number) {
-  return powerAction(node, "lxc", vmid, "stop");
+export function stopLXC(cluster: string, node: string, vmid: number) {
+  return powerAction(cluster, node, "lxc", vmid, "stop");
 }
 
-export function restartLXC(node: string, vmid: number) {
-  return powerAction(node, "lxc", vmid, "restart");
+export function restartLXC(cluster: string, node: string, vmid: number) {
+  return powerAction(cluster, node, "lxc", vmid, "restart");
 }

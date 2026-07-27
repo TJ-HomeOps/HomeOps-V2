@@ -47,6 +47,7 @@ export default function Proxmox() {
     total === 0 ? 0 : Math.round((used / total) * 100);
 
   async function vmAction(
+    cluster: string,
     node: string,
     vmid: number,
     action: "start" | "stop" | "restart"
@@ -61,15 +62,15 @@ export default function Proxmox() {
 
       switch (action) {
         case "start":
-          await startVM(node, vmid);
+          await startVM(cluster, node, vmid);
           break;
 
         case "stop":
-          await stopVM(node, vmid);
+          await stopVM(cluster, node, vmid);
           break;
 
         case "restart":
-          await restartVM(node, vmid);
+          await restartVM(cluster, node, vmid);
           break;
       }
 
@@ -81,6 +82,7 @@ export default function Proxmox() {
   }
 
   async function lxcAction(
+    cluster: string,
     node: string,
     vmid: number,
     action: "start" | "stop" | "restart"
@@ -95,15 +97,15 @@ export default function Proxmox() {
 
       switch (action) {
         case "start":
-          await startLXC(node, vmid);
+          await startLXC(cluster, node, vmid);
           break;
 
         case "stop":
-          await stopLXC(node, vmid);
+          await stopLXC(cluster, node, vmid);
           break;
 
         case "restart":
-          await restartLXC(node, vmid);
+          await restartLXC(cluster, node, vmid);
           break;
       }
 
@@ -234,7 +236,7 @@ export default function Proxmox() {
             >
               <div>
                 <Link
-                  to={`/proxmox/vms/${vm.node}/${vm.vmid}`}
+                  to={`/proxmox/vms/${vm.cluster}/${vm.node}/${vm.vmid}`}
                   style={{ textDecoration: "none" }}
                 >
                   <h3
@@ -273,9 +275,9 @@ export default function Proxmox() {
             </div>
 
             <PowerButtons
-              onStart={() => vmAction(vm.node, vm.vmid, "start")}
-              onRestart={() => vmAction(vm.node, vm.vmid, "restart")}
-              onStop={() => vmAction(vm.node, vm.vmid, "stop")}
+              onStart={() => vmAction(vm.cluster, vm.node, vm.vmid, "start")}
+              onRestart={() => vmAction(vm.cluster, vm.node, vm.vmid, "restart")}
+              onStop={() => vmAction(vm.cluster, vm.node, vm.vmid, "stop")}
             />
           </div>
         ))}
@@ -312,7 +314,7 @@ export default function Proxmox() {
             >
               <div>
                 <Link
-                  to={`/proxmox/lxc/${lxc.node}/${lxc.vmid}`}
+                  to={`/proxmox/lxc/${lxc.cluster}/${lxc.node}/${lxc.vmid}`}
                   style={{ textDecoration: "none" }}
                 >
                   <h3
@@ -351,9 +353,9 @@ export default function Proxmox() {
             </div>
 
             <PowerButtons
-              onStart={() => lxcAction(lxc.node, lxc.vmid, "start")}
-              onRestart={() => lxcAction(lxc.node, lxc.vmid, "restart")}
-              onStop={() => lxcAction(lxc.node, lxc.vmid, "stop")}
+              onStart={() => lxcAction(lxc.cluster, lxc.node, lxc.vmid, "start")}
+              onRestart={() => lxcAction(lxc.cluster, lxc.node, lxc.vmid, "restart")}
+              onStop={() => lxcAction(lxc.cluster, lxc.node, lxc.vmid, "stop")}
             />
           </div>
         ))}

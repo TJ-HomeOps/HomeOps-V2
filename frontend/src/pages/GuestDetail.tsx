@@ -78,7 +78,11 @@ function Stat({ label, value }: { label: string; value: React.ReactNode }) {
 }
 
 export default function GuestDetail({ kind }: GuestDetailProps) {
-  const { node, vmid } = useParams<{ node: string; vmid: string }>();
+  const { cluster, node, vmid } = useParams<{
+    cluster: string;
+    node: string;
+    vmid: string;
+  }>();
   const navigate = useNavigate();
 
   const [detail, setDetail] = useState<ProxmoxGuestDetail | null>(null);
@@ -91,10 +95,10 @@ export default function GuestDetail({ kind }: GuestDetailProps) {
   const kindLabel = kind === "qemu" ? "Virtual Machine" : "LXC Container";
 
   const load = useCallback(async () => {
-    if (!node || !vmid) return;
+    if (!cluster || !node || !vmid) return;
 
     try {
-      const data = await getDetail(node, vmid);
+      const data = await getDetail(cluster, node, vmid);
       setDetail(data);
       setError(null);
     } catch (err) {
@@ -106,7 +110,7 @@ export default function GuestDetail({ kind }: GuestDetailProps) {
     }
     // getDetail depends only on `kind`, which is a static prop per route.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [node, vmid, kind]);
+  }, [cluster, node, vmid, kind]);
 
   useEffect(() => {
     void load();
@@ -122,7 +126,7 @@ export default function GuestDetail({ kind }: GuestDetailProps) {
   }, []);
 
   const runAction = async (action: "start" | "stop" | "restart") => {
-    if (!node || !vmid) return;
+    if (!cluster || !node || !vmid) return;
 
     if (
       action !== "start" &&
@@ -138,7 +142,7 @@ export default function GuestDetail({ kind }: GuestDetailProps) {
 
     try {
       setActionPending(true);
-      await handlers[action](node, Number(vmid));
+      await handlers[action](cluster, node, Number(vmid));
       setTimeout(load, 1500);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to perform action.");
@@ -148,10 +152,10 @@ export default function GuestDetail({ kind }: GuestDetailProps) {
   };
 
   const historySeries = useMemo(() => {
-    if (!vmid) return [];
+    if (!cluster || !vmid) return [];
 
-    const cpuKey = `proxmox:${kind}:${vmid}:cpu`;
-    const memoryKey = `proxmox:${kind}:${vmid}:memory`;
+    const cpuKey = `proxmox:${cluster}:${kind}:${vmid}:cpu`;
+    const memoryKey = `proxmox:${cluster}:${kind}:${vmid}:memory`;
 
     return [
       metrics[cpuKey] && {
@@ -167,7 +171,7 @@ export default function GuestDetail({ kind }: GuestDetailProps) {
         points: metrics[memoryKey].points,
       },
     ].filter((series): series is NonNullable<typeof series> => Boolean(series));
-  }, [metrics, kind, vmid]);
+  }, [metrics, cluster, kind, vmid]);
 
   const configEntries = useMemo(() => {
     if (!detail) return [];

@@ -12,9 +12,10 @@ const criticalPercent = 95;
 const systemPollIntervalMs = 30000;
 
 // Tracks whether each metric is currently above (and at what level) its
-// threshold, keyed by a caller-chosen id (e.g. "system:cpu", "proxmox:node:
-// pve1:disk"). A notification only fires when this changes, otherwise every
-// poll while a metric sits above the threshold would spam a new entry.
+// threshold, keyed by a caller-chosen id (e.g. "system:cpu",
+// "proxmox:<cluster>:node:pve1:disk"). A notification only fires when this
+// changes, otherwise every poll while a metric sits above the threshold
+// would spam a new entry.
 const alertLevels = new Map<string, AlertLevel>();
 
 function levelForPercent(percent: number): AlertLevel {

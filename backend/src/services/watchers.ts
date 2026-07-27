@@ -1,6 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import { portainer } from "./portainer";
-import { proxmox } from "./proxmox";
+import { getProxmoxClusters, type ProxmoxCluster } from "./proxmox";
 import { recordNotification } from "./notifications";
 import { evaluateThreshold } from "./alerts";
 import { recordMetric } from "./metrics";
@@ -19,25 +19,47 @@ let proxmoxSeeded = false;
 let dockerSeeded = false;
 
 async function pollProxmox(): Promise<void> {
-  const { data } = await proxmox.get("/cluster/resources");
+  const clusters = getProxmoxClusters();
+  const showClusterLabel = clusters.length > 1;
+
+  await Promise.all(
+    clusters.map((cluster) => pollProxmoxCluster(cluster, showClusterLabel))
+  );
+
+  proxmoxSeeded = true;
+}
+
+async function pollProxmoxCluster(
+  cluster: ProxmoxCluster,
+  showClusterLabel: boolean
+): Promise<void> {
+  const clusterId = cluster.id;
+  const { data } = await cluster.client.get("/cluster/resources");
   const resources = data.data as ProxmoxResource[];
 
+  // Node/guest names are only unique within a cluster, so every state map
+  // and metric/alert key below is namespaced by cluster id to avoid two
+  // clusters' same-named nodes colliding.
   for (const resource of resources) {
     if (resource.type === "node") {
-      const key = resource.node;
+      const key = `${clusterId}:${resource.node}`;
       const status = resource.status;
       const previous = nodeStatus.get(key);
       nodeStatus.set(key, status);
+
+      const label = showClusterLabel
+        ? `${resource.node} (${cluster.name})`
+        : resource.node;
 
       if (proxmoxSeeded && previous && previous !== status) {
         await recordNotification({
           source: "proxmox",
           severity: status === "online" ? "info" : "critical",
-          title: `Node ${key} is ${status}`,
+          title: `Node ${label} is ${status}`,
           message:
             status === "online"
-              ? `Node ${key} came back online.`
-              : `Node ${key} went offline.`,
+              ? `Node ${label} came back online.`
+              : `Node ${label} went offline.`,
         });
       }
 
@@ -48,15 +70,15 @@ async function pollProxmox(): Promise<void> {
           const cpuPercent = resource.cpu * 100;
 
           await evaluateThreshold(
-            `proxmox:node:${key}:cpu`,
+            `proxmox:${clusterId}:node:${resource.node}:cpu`,
             "proxmox",
-            `Node ${key} CPU usage`,
+            `Node ${label} CPU usage`,
             cpuPercent
           );
 
           await recordMetric(
-            `proxmox:node:${key}:cpu`,
-            `Node ${key} CPU`,
+            `proxmox:${clusterId}:node:${resource.node}:cpu`,
+            `Node ${label} CPU`,
             cpuPercent
           );
         }
@@ -65,15 +87,15 @@ async function pollProxmox(): Promise<void> {
           const memoryPercent = ((resource.mem ?? 0) / resource.maxmem) * 100;
 
           await evaluateThreshold(
-            `proxmox:node:${key}:memory`,
+            `proxmox:${clusterId}:node:${resource.node}:memory`,
             "proxmox",
-            `Node ${key} memory usage`,
+            `Node ${label} memory usage`,
             memoryPercent
           );
 
           await recordMetric(
-            `proxmox:node:${key}:memory`,
-            `Node ${key} memory`,
+            `proxmox:${clusterId}:node:${resource.node}:memory`,
+            `Node ${label} memory`,
             memoryPercent
           );
         }
@@ -82,15 +104,15 @@ async function pollProxmox(): Promise<void> {
           const diskPercent = ((resource.disk ?? 0) / resource.maxdisk) * 100;
 
           await evaluateThreshold(
-            `proxmox:node:${key}:disk`,
+            `proxmox:${clusterId}:node:${resource.node}:disk`,
             "proxmox",
-            `Node ${key} disk usage`,
+            `Node ${label} disk usage`,
             diskPercent
           );
 
           await recordMetric(
-            `proxmox:node:${key}:disk`,
-            `Node ${key} disk`,
+            `proxmox:${clusterId}:node:${resource.node}:disk`,
+            `Node ${label} disk`,
             diskPercent
           );
         }
@@ -100,27 +122,30 @@ async function pollProxmox(): Promise<void> {
     }
 
     if (resource.type === "qemu" || resource.type === "lxc") {
-      const key = `${resource.type}:${resource.vmid}`;
+      const key = `${clusterId}:${resource.type}:${resource.vmid}`;
       const status = resource.status;
       const previous = guestStatus.get(key);
       guestStatus.set(key, status);
 
       const kind = resource.type === "qemu" ? "VM" : "LXC";
       const name = resource.name ?? `#${resource.vmid}`;
+      const nodeLabel = showClusterLabel
+        ? `${resource.node} (${cluster.name})`
+        : resource.node;
 
       if (proxmoxSeeded && previous && previous !== status) {
         await recordNotification({
           source: "proxmox",
           severity: status === "running" ? "info" : "warning",
           title: `${kind} ${name} is ${status}`,
-          message: `${kind} ${name} on ${resource.node} is now ${status}.`,
+          message: `${kind} ${name} on ${nodeLabel} is now ${status}.`,
         });
       }
 
       // A stopped guest reports 0 for both fields, which would otherwise
       // show as a flatline to zero on every stop rather than a gap.
       if (status === "running") {
-        const metricKey = `proxmox:${resource.type}:${resource.vmid}`;
+        const metricKey = `proxmox:${clusterId}:${resource.type}:${resource.vmid}`;
 
         if (resource.cpu !== undefined) {
           await recordMetric(
@@ -140,8 +165,6 @@ async function pollProxmox(): Promise<void> {
       }
     }
   }
-
-  proxmoxSeeded = true;
 }
 
 interface PortainerContainer {
