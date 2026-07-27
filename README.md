@@ -153,8 +153,7 @@ This is the in-depth operations hub — everything the Dashboard deliberately le
 ## 🏠 Dashboard
 
 <p align="center">
-<img src="docs/dashboardv2.png" width="95%" alt="Dashboard">
-<img src="docs/dashboardv21.png" width="95%" alt="Dashboard">
+<img src="docs/Dashboardv2.png" width="95%" alt="Dashboard">
 </p>
 
 The Dashboard provides a complete overview of your infrastructure, including cluster health, running guests, Docker statistics, storage usage, and real-time system metrics.
@@ -165,6 +164,8 @@ The Dashboard provides a complete overview of your infrastructure, including clu
 
 <p align="center">
 <img src="docs/proxmoxv2.png" width="95%" alt="Proxmox Overview">
+<img src="docs/proxmoxv2-1.png" width="95%" alt="Proxmox Overview">
+<img src="docs/proxmoxv2-2.png" width="95%" alt="Proxmox Overview">
 </p>
 
 View your Proxmox cluster with detailed node information, virtual machines, LXC containers, resource utilization, and overall cluster health.
