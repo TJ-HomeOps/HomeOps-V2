@@ -1,248 +1,175 @@
 import { useEffect, useState } from "react";
-import { disableLock, enableLock, getAuthStatus } from "../api/auth";
+import {
+  disableLock,
+  enableLock,
+  getAuthStatus,
+} from "../api/auth";
+import {
+  disableSettingsLock,
+  enableSettingsLock,
+  getSettingsAuthSession,
+  getSettingsAuthStatus,
+  settingsLogin,
+} from "../api/settingsAuth";
+import {
+  getIntegrations,
+  updateIntegration,
+  updateProxmoxClusters,
+} from "../api/integrations";
 import PageHeader from "../components/PageHeader";
 import Alert from "../components/common/Alert";
-import Button from "../components/common/Button";
-import Card from "../components/common/Card";
-import Input from "../components/common/Input";
-import Modal from "../components/common/Modal";
-import ConfirmDialog from "../components/ConfirmDialog";
-import colors from "../theme/colors";
+import Spinner from "../components/common/Spinner";
+import PasswordLockCard from "../components/PasswordLockCard";
+import IntegrationCard from "../components/IntegrationCard";
+import ProxmoxClustersCard from "../components/ProxmoxClustersCard";
+import LockPrompt from "../components/LockPrompt";
+import type { IntegrationsResponse } from "../types/integrations";
 
-function Toggle({
-  checked,
-  disabled,
-  onChange,
-}: {
-  checked: boolean;
-  disabled?: boolean;
-  onChange: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={checked}
-      disabled={disabled}
-      onClick={onChange}
-      style={{
-        width: 44,
-        height: 24,
-        borderRadius: 999,
-        border: "none",
-        padding: 3,
-        background: checked ? colors.primary : colors.surfaceAlt,
-        cursor: disabled ? "not-allowed" : "pointer",
-        opacity: disabled ? 0.6 : 1,
-        display: "flex",
-        justifyContent: checked ? "flex-end" : "flex-start",
-        transition: "background .2s ease",
-      }}
-    >
-      <span
-        style={{
-          width: 18,
-          height: 18,
-          borderRadius: "50%",
-          background: colors.white,
-          display: "block",
-        }}
-      />
-    </button>
-  );
-}
+type GateState = "checking" | "unlocked" | "needsPassword" | "error";
 
 export default function Settings() {
-  const [lockEnabled, setLockEnabled] = useState(false);
-  const [loadingStatus, setLoadingStatus] = useState(true);
-  const [error, setError] = useState("");
-
-  const [setPasswordOpen, setSetPasswordOpen] = useState(false);
-  const [confirmDisableOpen, setConfirmDisableOpen] = useState(false);
+  const [gateState, setGateState] = useState<GateState>("checking");
 
   useEffect(() => {
-    getAuthStatus()
-      .then((status) => setLockEnabled(status.enabled))
-      .catch(() => setError("Unable to load password protection status."))
-      .finally(() => setLoadingStatus(false));
+    let cancelled = false;
+
+    async function check() {
+      try {
+        const { enabled } = await getSettingsAuthStatus();
+
+        if (cancelled) return;
+
+        if (!enabled) {
+          setGateState("unlocked");
+          return;
+        }
+
+        try {
+          await getSettingsAuthSession();
+
+          if (!cancelled) setGateState("unlocked");
+        } catch {
+          if (!cancelled) setGateState("needsPassword");
+        }
+      } catch {
+        if (!cancelled) setGateState("error");
+      }
+    }
+
+    void check();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  function handleToggle() {
-    setError("");
-
-    if (lockEnabled) {
-      setConfirmDisableOpen(true);
-    } else {
-      setSetPasswordOpen(true);
-    }
+  if (gateState === "checking") {
+    return (
+      <div className="page">
+        <PageHeader title="Settings" />
+        <Spinner label="Checking access" />
+      </div>
+    );
   }
 
-  async function handleDisable() {
-    try {
-      await disableLock();
-      setLockEnabled(false);
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Unable to disable password protection."
-      );
-    } finally {
-      setConfirmDisableOpen(false);
-    }
-  }
-
-  return (
-    <>
-      <PageHeader
-        title="Settings"
-        subtitle="Access preferences for this app"
-      />
-
-      {error && (
-        <Alert title="Error" variant="danger" style={{ marginBottom: 20 }}>
-          {error}
+  if (gateState === "error") {
+    return (
+      <div className="page">
+        <PageHeader title="Settings" />
+        <Alert title="Unable to reach the server" variant="danger">
+          Check your connection and reload the page.
         </Alert>
-      )}
-
-      <Card title="Password Protection" padding={20}>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            gap: 16,
-          }}
-        >
-          <div style={{ color: colors.textSecondary, fontSize: 14 }}>
-            When enabled, a password is required to open this app. There is
-            no separate username — everyone uses the same password.
-          </div>
-
-          <Toggle
-            checked={lockEnabled}
-            disabled={loadingStatus}
-            onChange={handleToggle}
-          />
-        </div>
-      </Card>
-
-      <SetPasswordModal
-        open={setPasswordOpen}
-        onClose={() => setSetPasswordOpen(false)}
-        onEnabled={() => {
-          setLockEnabled(true);
-          setSetPasswordOpen(false);
-        }}
-      />
-
-      <ConfirmDialog
-        open={confirmDisableOpen}
-        title="Turn off password protection?"
-        message="Anyone with the link will be able to open this app without a password."
-        confirmText="Turn off"
-        onConfirm={handleDisable}
-        onCancel={() => setConfirmDisableOpen(false)}
-      />
-    </>
-  );
-}
-
-function SetPasswordModal({
-  open,
-  onClose,
-  onEnabled,
-}: {
-  open: boolean;
-  onClose: () => void;
-  onEnabled: () => void;
-}) {
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [error, setError] = useState("");
-  const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    if (open) {
-      setPassword("");
-      setConfirmPassword("");
-      setError("");
-    }
-  }, [open]);
-
-  async function handleSubmit() {
-    if (password.length < 4) {
-      setError("Password must be at least 4 characters.");
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      setError("Passwords do not match.");
-      return;
-    }
-
-    try {
-      setSaving(true);
-      setError("");
-
-      await enableLock(password);
-
-      onEnabled();
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Unable to enable password protection."
-      );
-    } finally {
-      setSaving(false);
-    }
+      </div>
+    );
   }
 
-  return (
-    <Modal
-      open={open}
-      title="Set a password"
-      onClose={onClose}
-      width={400}
-      footer={
-        <>
-          <Button variant="outline" onClick={onClose} disabled={saving}>
-            Cancel
-          </Button>
-
-          <Button
-            onClick={handleSubmit}
-            disabled={saving || !password || !confirmPassword}
-            loading={saving}
-          >
-            Enable
-          </Button>
-        </>
-      }
-    >
-      <div style={{ display: "grid", gap: 16 }}>
-        {error && (
-          <Alert variant="danger" style={{ margin: 0 }}>
-            {error}
-          </Alert>
-        )}
-
-        <Input
-          type="password"
-          label="Password"
-          value={password}
-          onChange={setPassword}
-          autoFocus
-        />
-
-        <Input
-          type="password"
-          label="Confirm password"
-          value={confirmPassword}
-          onChange={setConfirmPassword}
+  if (gateState === "needsPassword") {
+    return (
+      <div className="page">
+        <PageHeader title="Settings" />
+        <LockPrompt
+          fullScreen={false}
+          subtitle="This page is password protected."
+          onLogin={settingsLogin}
+          onSuccess={() => setGateState("unlocked")}
         />
       </div>
-    </Modal>
+    );
+  }
+
+  return <SettingsContent />;
+}
+
+function SettingsContent() {
+  const [integrationsData, setIntegrationsData] =
+    useState<IntegrationsResponse | null>(null);
+  const [loadingIntegrations, setLoadingIntegrations] = useState(true);
+  const [integrationsError, setIntegrationsError] = useState(false);
+
+  useEffect(() => {
+    getIntegrations()
+      .then(setIntegrationsData)
+      .catch(() => setIntegrationsError(true))
+      .finally(() => setLoadingIntegrations(false));
+  }, []);
+
+  return (
+    <div className="page">
+      <PageHeader
+        title="Settings"
+        subtitle="Access preferences and connected app credentials"
+      />
+
+      <PasswordLockCard
+        title="App Password"
+        description="When enabled, a password is required to open this app. There is no separate username — everyone uses the same password."
+        disableWarning="Anyone with the link will be able to open this app without a password."
+        getStatus={getAuthStatus}
+        enable={enableLock}
+        disable={disableLock}
+      />
+
+      <PasswordLockCard
+        title="Settings Page Lock"
+        description="An extra password just for this page, on top of the app password above — useful since it holds real API credentials."
+        disableWarning="Anyone already logged into the app will be able to open Settings without a second password."
+        getStatus={getSettingsAuthStatus}
+        enable={enableSettingsLock}
+        disable={disableSettingsLock}
+      />
+
+      <h2
+        style={{
+          fontSize: 20,
+          fontWeight: 700,
+          margin: "32px 0 16px",
+        }}
+      >
+        Connected Apps
+      </h2>
+
+      {loadingIntegrations ? (
+        <Spinner label="Loading integrations" />
+      ) : integrationsError || !integrationsData ? (
+        <Alert title="Unable to load integrations" variant="danger">
+          Check your connection and reload the page.
+        </Alert>
+      ) : (
+        <>
+          {integrationsData.integrations.map((integration) => (
+            <IntegrationCard
+              key={integration.key}
+              integration={integration}
+              onSave={updateIntegration}
+            />
+          ))}
+
+          <ProxmoxClustersCard
+            clusters={integrationsData.proxmoxClusters}
+            onSave={updateProxmoxClusters}
+          />
+        </>
+      )}
+    </div>
   );
 }

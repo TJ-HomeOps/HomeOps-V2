@@ -1,10 +1,8 @@
-import { useEffect, useState, type FormEvent, type ReactNode } from "react";
-import { Lock } from "lucide-react";
+import { useEffect, useState, type ReactNode } from "react";
 import { getAuthSession, getAuthStatus, login } from "../api/auth";
 import Alert from "../components/common/Alert";
-import Button from "../components/common/Button";
-import Input from "../components/common/Input";
 import Spinner from "../components/common/Spinner";
+import LockPrompt from "../components/LockPrompt";
 import colors from "../theme/colors";
 
 type GateState =
@@ -81,103 +79,14 @@ export default function AuthGate({ children }: { children: ReactNode }) {
   }
 
   if (state === "needsPassword") {
-    return <PasswordPrompt onSuccess={() => setState("authenticated")} />;
+    return (
+      <LockPrompt
+        subtitle="This app is password protected."
+        onLogin={login}
+        onSuccess={() => setState("authenticated")}
+      />
+    );
   }
 
   return <>{children}</>;
-}
-
-function PasswordPrompt({ onSuccess }: { onSuccess: () => void }) {
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-
-  async function handleSubmit(event: FormEvent) {
-    event.preventDefault();
-
-    if (!password) return;
-
-    try {
-      setSubmitting(true);
-      setError("");
-
-      await login(password);
-
-      onSuccess();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Unable to log in.");
-      setPassword("");
-    } finally {
-      setSubmitting(false);
-    }
-  }
-
-  return (
-    <div style={centeredPageStyle}>
-      <form
-        onSubmit={handleSubmit}
-        style={{
-          width: "100%",
-          maxWidth: 360,
-          background: colors.surface,
-          border: `1px solid ${colors.border}`,
-          borderRadius: 14,
-          padding: 32,
-        }}
-      >
-        <div style={{ textAlign: "center", marginBottom: 24 }}>
-          <Lock size={36} color={colors.primary} />
-
-          <div
-            style={{
-              color: colors.text,
-              fontWeight: 700,
-              fontSize: 20,
-              marginTop: 12,
-            }}
-          >
-            Password required
-          </div>
-
-          <div
-            style={{
-              color: colors.textSecondary,
-              fontSize: 14,
-              marginTop: 6,
-            }}
-          >
-            This app is password protected.
-          </div>
-        </div>
-
-        {error && (
-          <Alert
-            variant="danger"
-            style={{ marginBottom: 16 }}
-          >
-            {error}
-          </Alert>
-        )}
-
-        <div style={{ marginBottom: 20 }}>
-          <Input
-            type="password"
-            label="Password"
-            value={password}
-            onChange={setPassword}
-            autoFocus
-          />
-        </div>
-
-        <Button
-          type="submit"
-          fullWidth
-          disabled={!password || submitting}
-          loading={submitting}
-        >
-          Unlock
-        </Button>
-      </form>
-    </div>
-  );
 }

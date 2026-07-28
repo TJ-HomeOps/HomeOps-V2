@@ -13,21 +13,37 @@ import cameraRoutes from "./routes/camera";
 import notificationRoutes from "./routes/notifications";
 import metricsRoutes from "./routes/metrics";
 import auditRoutes from "./routes/audit";
+import updateRoutes from "./routes/updates";
+import integrationRoutes from "./routes/integrations";
 import wsRoutes from "./routes/ws";
 import authRoutes from "./routes/auth";
+import settingsAuthRoutes from "./routes/settingsAuth";
 import docsRoutes from "./routes/docs";
 import { startWatchers } from "./services/watchers";
 import { startSystemAlertWatcher } from "./services/alerts";
 import { startSensorWatcher } from "./services/sensors";
 import { SESSION_COOKIE_NAME, isSessionValid } from "./services/auth";
+import {
+  SETTINGS_SESSION_COOKIE_NAME,
+  isSessionValid as isSettingsSessionValid,
+} from "./services/settingsAuth";
 
-// Only these two auth endpoints are reachable before a session exists — the
-// rest, including /api/auth/enable and /api/auth/disable, are covered by the
-// lockEnabled check inside isSessionValid, since enabling requires no prior
-// session only while the lock is currently off.
-const publicAuthPaths = new Set(["/api/auth/status", "/api/auth/login"]);
+// Only these endpoints are reachable before a session exists — the rest,
+// including /api/auth/enable and /api/auth/disable (and their settings-lock
+// equivalents), are covered by the lockEnabled check inside isSessionValid,
+// since enabling requires no prior session only while the lock is currently
+// off.
+const publicAuthPaths = new Set([
+  "/api/auth/status",
+  "/api/auth/login",
+  "/api/settings-auth/status",
+  "/api/settings-auth/login",
+]);
 
-function readSessionCookie(header: string | undefined): string | undefined {
+function readCookie(
+  header: string | undefined,
+  name: string
+): string | undefined {
   if (!header) {
     return undefined;
   }
@@ -41,7 +57,7 @@ function readSessionCookie(header: string | undefined): string | undefined {
 
     const key = part.slice(0, separatorIndex).trim();
 
-    if (key === SESSION_COOKIE_NAME) {
+    if (key === name) {
       return decodeURIComponent(part.slice(separatorIndex + 1).trim());
     }
   }
@@ -82,16 +98,33 @@ async function start() {
         return;
       }
 
-      const token = readSessionCookie(request.headers.cookie);
+      const token = readCookie(request.headers.cookie, SESSION_COOKIE_NAME);
       const valid = await isSessionValid(token);
 
       if (!valid) {
         reply.code(401).send({ message: "Authentication required." });
+        return;
+      }
+
+      // Integrations hold real API credentials, so they get a second,
+      // independent lock on top of the app-wide one above.
+      if (path.startsWith("/api/integrations")) {
+        const settingsToken = readCookie(
+          request.headers.cookie,
+          SETTINGS_SESSION_COOKIE_NAME
+        );
+        const settingsValid = await isSettingsSessionValid(settingsToken);
+
+        if (!settingsValid) {
+          reply.code(401).send({ message: "Settings unlock required." });
+        }
       }
     });
 
     // Register API routes
     await app.register(authRoutes);
+    await app.register(settingsAuthRoutes);
+    await app.register(integrationRoutes);
     await app.register(healthRoutes);
     await app.register(endpointRoutes);
     await app.register(dockerRoutes);
@@ -102,6 +135,7 @@ async function start() {
     await app.register(notificationRoutes);
     await app.register(metricsRoutes);
     await app.register(auditRoutes);
+    await app.register(updateRoutes);
     await app.register(wsRoutes);
     await app.register(docsRoutes);
 
