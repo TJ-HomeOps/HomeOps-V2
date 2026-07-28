@@ -86,6 +86,15 @@ This is the in-depth operations hub — everything the Dashboard deliberately le
 
 ---
 
+## 🔭 Watchtower — Update Tracking
+
+- Update availability across every container, backed by [What's Up Docker](https://github.com/fmartinou/whats-up-docker) — a real version diff (current vs. latest), not just a "new digest exists" flag
+- Watchtower itself stays in monitor-only mode; nothing updates automatically
+- One-click **Update** per container: rewrites a pinned image tag in its `docker-compose.yml` if needed, then runs `docker compose pull && up -d` for that project — recreating every sibling service in the same project together, so version-locked pairs (e.g. an app + its worker) never drift apart
+- A link out to the full What's Up Docker dashboard for anything needing more detail
+
+---
+
 ## 💻 System Monitoring
 
 - Hostname
@@ -139,6 +148,15 @@ This is the in-depth operations hub — everything the Dashboard deliberately le
 
 - Optional single shared-password lock for the whole app, toggled from Settings
 - Off by default. Enabling it doesn't require Authentik or any external identity provider — that's still a planned Phase 4 item
+- A second, independent **Settings Page Lock** is available too — its own password gating just the Settings page, on top of the app-wide one above, since Settings holds real API credentials (see Connected Apps below)
+
+---
+
+## 🔌 Connected Apps
+
+- Every external API HomeOps' backend talks to — Portainer, the primary Proxmox cluster (plus any additional clusters), What's Up Docker, and the security camera relay — gets an editable credentials card right in Settings, instead of hand-editing `.env`
+- Secrets never round-trip back to the browser: the API only ever reports whether a token is set, never its value. Leaving a secret field blank on save keeps the existing one
+- Saving writes straight to `backend/.env` and restarts the backend automatically to apply it — no manual restart step
 
 ---
 
@@ -181,6 +199,26 @@ View your Proxmox cluster with detailed node information, virtual machines, LXC 
 </p>
 
 Monitor your Docker environment with container statistics, image counts, server information, runtime status, and resource usage.
+
+---
+
+## 🔭 Watchtower
+
+<p align="center">
+<img src="docs/watchtower.png" width="95%" alt="Watchtower update tracking">
+</p>
+
+Real version diffs for every container, with a one-click Update that stays scoped to that container's compose project.
+
+---
+
+## ⚙️ Settings
+
+<p align="center">
+<img src="docs/settings.png" width="95%" alt="Settings — password locks and Connected Apps">
+</p>
+
+Two independent password locks, plus editable credentials for every connected app — no more hand-editing `.env`.
 
 ---
 
@@ -283,9 +321,11 @@ This keeps the frontend simple while allowing backend integrations to evolve ind
 - ✅ VM Details
 - ✅ LXC Details
 - ✅ Container Details
-- ✅ Optional Password Protection
+- ✅ Optional Password Protection (app-wide + a separate Settings Page Lock)
 - ✅ REST API Documentation (OpenAPI JSON)
 - ✅ Multi-Cluster Support
+- ✅ Watchtower Update Tracking (via What's Up Docker)
+- ✅ Connected Apps — in-app credential management for every integration
 
 ---
 
