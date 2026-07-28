@@ -10,6 +10,7 @@ import Proxmox from "./pages/Proxmox";
 import NodeDetail from "./pages/NodeDetail";
 import GuestDetail from "./pages/GuestDetail";
 import Camera from "./pages/Camera";
+import Watchtower from "./pages/Watchtower";
 import Notifications from "./pages/Notifications";
 import AuditLog from "./pages/AuditLog";
 import Announcements from "./pages/Announcements";
@@ -58,6 +59,10 @@ export default function App() {
                 Security Camera
               </NavLink>
 
+              <NavLink to="/watchtower">
+                Watchtower
+              </NavLink>
+
               <NavLink to="/notifications">
                 Notifications
               </NavLink>
@@ -104,6 +109,7 @@ export default function App() {
                 element={<GuestDetail kind="lxc" />}
               />
               <Route path="/camera" element={<Camera />} />
+              <Route path="/watchtower" element={<Watchtower />} />
               <Route path="/notifications" element={<Notifications />} />
               <Route path="/audit-log" element={<AuditLog />} />
               <Route path="/announcements" element={<Announcements />} />

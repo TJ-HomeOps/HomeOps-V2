@@ -17,7 +17,10 @@ async function request<T>(
       // origin than the page (the backend's CORS config allows this).
       credentials: "include",
       headers: {
-        "Content-Type": "application/json",
+        // Fastify's JSON body parser rejects an empty body sent with this
+        // header (FST_ERR_CTP_EMPTY_JSON_BODY), so it's only set when there
+        // actually is a body to parse.
+        ...(options?.body ? { "Content-Type": "application/json" } : {}),
         ...(options?.headers ?? {}),
       },
       ...options,
